@@ -115,36 +115,41 @@ WorkshopAgentes/
 
 ---
 
-## 🚀 Ejecución Rápida Local y Escenario Obligatorio
+## ☁️ Despliegue en AWS Cloud (100% Cloud — Sin Dependencias Locales)
 
-### Opción A: Iniciar todo con el script automatizado
-```powershell
-.\start_all_local.ps1
-```
+La plataforma se encuentra totalmente desplegada y operando en **Amazon Web Services (AWS)** en la región `us-east-1`:
 
-### Opción B: Iniciar servicios en terminales individuales
-```powershell
-# Terminal 1: FlightsAgent (A2A + MCP Vuelos en puerto 9001)
-$env:PORT='9001'; python app/FlightsAgent/main.py
+### URLs y Endpoints en Producción
 
-# Terminal 2: WeatherAgent (A2A + MCP Clima en puerto 9002)
-$env:PORT='9002'; python app/WeatherAgent/main.py
-
-# Terminal 3: Canal 1 API Gateway Local (Puerto 8085)
-$env:API_PORT='8085'; python backend/local_api_server.py
-
-# Terminal 4: OrchestratorAgent (Canal 2 Streaming en puerto 8080)
-$env:PORT='8080'; python app/OrchestratorAgent/main.py
-```
-
-Luego abre `frontend/index.html` (o `chat.html`) en tu navegador y ejecuta el **Escenario Obligatorio de Demostración**:
-> *"Quiero organizar unas vacaciones de cuatro días en Cartagena. Salgo desde Bogotá, viajo con dos personas más y tengo un presupuesto de 5 millones de pesos. Quiero conocer el clima, encontrar vuelos y organizar algunas actividades turísticas."*
+| Componente | Servicio AWS | URL / Endpoint Activo |
+| :--- | :--- | :--- |
+| **Frontend Web (SPA)** | Amazon S3 Static Hosting | [http://tripplanner-ai-frontend-744617282997-us-east-1.s3-website-us-east-1.amazonaws.com](http://tripplanner-ai-frontend-744617282997-us-east-1.s3-website-us-east-1.amazonaws.com) |
+| **Canal 1 (Operaciones de Negocio)** | Amazon API Gateway (REST + CORS + Throttling) | `https://5b6j1ip133.execute-api.us-east-1.amazonaws.com/prod` |
+| **Canal 2 (Streaming Multiagente)** | Amazon Bedrock AgentCore Runtime | `https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A744617282997%3Aruntime%2Fworkshop2_OrchestratorAgent-tPLDXq487r/invocations` |
+| **Agente Especialista Vuelos** | Bedrock AgentCore Runtime (A2A + MCP) | `arn:aws:bedrock-agentcore:us-east-1:744617282997:runtime/workshop2_FlightsAgent-fC6aTM9OHc` |
+| **Agente Especialista Clima** | Bedrock AgentCore Runtime (A2A + MCP) | `arn:aws:bedrock-agentcore:us-east-1:744617282997:runtime/workshop2_WeatherAgent-s7pABA4FJm` |
+| **Memoria Agéntica** | Amazon Bedrock AgentCore Memory | `arn:aws:bedrock-agentcore:us-east-1:744617282997:memory/workshop2_TripPlannerMemory-Z4G3f5GSF9` |
+| **Persistencia DynamoDB** | Amazon DynamoDB (Pay-Per-Request) | `TripPlanner-Trips`, `TripPlanner-Itineraries`, `TripPlanner-Reservations`, `TripPlanner-Users` |
 
 ---
 
-## ☁️ Despliegue en AWS
+## 🛠️ Comandos de Empaquetado y Despliegue (AWS SAM / CloudFormation)
 
-Consulta la guía detallada en [docs/10-arquitectura-dos-canales-y-entregable-final.md](docs/10-arquitectura-dos-canales-y-entregable-final.md) o ejecuta:
 ```powershell
-.\deploy_aws.ps1
+# 1. Empaquetar artefactos hacia S3
+aws cloudformation package `
+  --template-file template.yaml `
+  --s3-bucket tripplanner-sam-artifacts-744617282997 `
+  --output-template-file packaged.yaml `
+  --region us-east-1
+
+# 2. Desplegar infraestructura serverless
+aws cloudformation deploy `
+  --template-file packaged.yaml `
+  --stack-name tripplanner-ai-stack `
+  --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND `
+  --region us-east-1
+
+# 3. Sincronizar frontend en S3
+aws s3 sync frontend/ s3://tripplanner-ai-frontend-744617282997-us-east-1/ --cache-control "no-cache"
 ```
