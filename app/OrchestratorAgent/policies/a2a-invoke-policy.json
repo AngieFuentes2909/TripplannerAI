@@ -1,0 +1,86 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowA2ASpecialistRuntimeInvocations",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:InvokeAgentRuntime",
+        "bedrock-agentcore:InvokeAgentRuntimeForUser"
+      ],
+      "Resource": [
+        "arn:aws:bedrock-agentcore:us-east-1:744617282997:runtime/workshop2_FlightsAgent-*",
+        "arn:aws:bedrock-agentcore:us-east-1:744617282997:runtime/workshop2_WeatherAgent-*"
+      ]
+    },
+    {
+      "Sid": "AllowBedrockNovaModelInvocations",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-lite-v1:0",
+        "arn:aws:bedrock:us-east-1::foundation-model/amazon.nova-micro-v1:0"
+      ]
+    },
+    {
+      "Sid": "AllowAgentCoreMemoryAccess",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:GetMemory",
+        "bedrock-agentcore:GetMemoryRecord",
+        "bedrock-agentcore:CreateEvent",
+        "bedrock-agentcore:GetEvent",
+        "bedrock-agentcore:ListEvents",
+        "bedrock-agentcore:ListSessions",
+        "bedrock-agentcore:ListActors",
+        "bedrock-agentcore:ListMemoryRecords",
+        "bedrock-agentcore:RetrieveMemoryRecords"
+      ],
+      "Resource": [
+        "arn:aws:bedrock-agentcore:us-east-1:744617282997:memory/*"
+      ]
+    },
+    {
+      "Sid": "AllowTripPlannerBusinessLambdasInvocation",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": [
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-CreateTrip",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-GetTrips",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-UpdateTrip",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-CreateItinerary",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-UpdateItinerary",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-CreateReservation",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-GetReservations",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-UpdateReservation",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-CompareBudget",
+        "arn:aws:lambda:us-east-1:744617282997:function:TripPlanner-UserProfile"
+      ]
+    },
+    {
+      "Sid": "AllowTripPlannerDynamoDBAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Trips",
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Trips/index/*",
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Itineraries",
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Itineraries/index/*",
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Reservations",
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Reservations/index/*",
+        "arn:aws:dynamodb:us-east-1:744617282997:table/TripPlanner-Users"
+      ]
+    }
+  ]
+}

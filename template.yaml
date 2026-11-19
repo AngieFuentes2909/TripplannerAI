@@ -1,0 +1,468 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  TripPlanner AI - Trabajo Final Programacion Agentica.
+  Arquitectura Serverless Unificada (Canal 1 API Gateway + AWS Lambda + Amazon DynamoDB + Hosting S3)
+  integrada con Amazon Bedrock AgentCore (Canal 2 Streaming Multiagente A2A + MCP).
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.12
+    CodeUri: backend.zip
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        TRIPS_TABLE: !Ref TripsTable
+        ITINERARIES_TABLE: !Ref ItinerariesTable
+        RESERVATIONS_TABLE: !Ref ReservationsTable
+        USERS_TABLE: !Ref UsersTable
+
+Resources:
+  # ============================================================================
+  # 1. CAPA DE PERSISTENCIA: TABLAS AMAZON DYNAMODB
+  # ============================================================================
+  TripsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TripPlanner-Trips
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: tripId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: tripId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  ItinerariesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TripPlanner-Itineraries
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: itineraryId
+          AttributeType: S
+        - AttributeName: tripId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: itineraryId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: TripIdIndex
+          KeySchema:
+            - AttributeName: tripId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  ReservationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TripPlanner-Reservations
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: reservationId
+          AttributeType: S
+        - AttributeName: tripId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: reservationId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: TripIdIndex
+          KeySchema:
+            - AttributeName: tripId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: UserIdIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TripPlanner-Users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  # ============================================================================
+  # 2. CANAL 1: AMAZON API GATEWAY (REST API CON CORS Y THROTTLING DE SEGURIDAD)
+  # ============================================================================
+  TripPlannerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: TripPlanner-Business-API
+      StageName: prod
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingBurstLimit: 50
+          ThrottlingRateLimit: 100
+      Cors:
+        AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Actor-Id,X-Session-Id'"
+        AllowOrigin: "'*'"
+
+  # ============================================================================
+  # 3. CAPA DE LÓGICA DE NEGOCIO Y TOOLS: 8 FUNCIONES AWS LAMBDA (IAM Mínimo Privilegio)
+  # ============================================================================
+
+  # Tool 1: CreateTrip
+  CreateTripFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-CreateTrip
+      Description: Crea un nuevo viaje del usuario en Amazon DynamoDB (Tool CreateTrip y POST /trips)
+      Handler: handlers.create_trip_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TripsTable
+      Events:
+        CreateTripApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips
+            Method: POST
+
+  # Tool 2: GetTrips
+  GetTripsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-GetTrips
+      Description: Consulta los viajes del usuario con sus itinerarios y reservas (Tool GetTrips y GET /trips)
+      Handler: handlers.get_trips_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TripsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ItinerariesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReservationsTable
+      Events:
+        GetTripsApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips
+            Method: GET
+        GetTripByIdApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips/{tripId}
+            Method: GET
+
+  # Tool 3: UpdateTrip
+  UpdateTripFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-UpdateTrip
+      Description: Actualiza los datos o estado de un viaje existente (Tool UpdateTrip y PUT /trips/{tripId})
+      Handler: handlers.update_trip_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TripsTable
+      Events:
+        UpdateTripApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips/{tripId}
+            Method: PUT
+        UpdateTripRootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips
+            Method: PUT
+
+  # Tool 4: CreateItinerary
+  CreateItineraryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-CreateItinerary
+      Description: Crea el itinerario por dias asociado a un viaje (Tool CreateItinerary y POST /itineraries)
+      Handler: handlers.create_itinerary_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItinerariesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TripsTable
+      Events:
+        CreateItineraryApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /itineraries
+            Method: POST
+
+  # Tool 5: UpdateItinerary
+  UpdateItineraryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-UpdateItinerary
+      Description: Modifica actividades o dias de un itinerario existente (Tool UpdateItinerary y PUT /itineraries/{itineraryId})
+      Handler: handlers.update_itinerary_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItinerariesTable
+      Events:
+        UpdateItineraryApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /itineraries/{itineraryId}
+            Method: PUT
+        UpdateItineraryRootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /itineraries
+            Method: PUT
+
+  # Tool 6: CreateReservation
+  CreateReservationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-CreateReservation
+      Description: Registra una reserva (Vuelo, Hotel, Actividad) asociada a un viaje (Tool CreateReservation y POST /reservations)
+      Handler: handlers.create_reservation_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReservationsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref TripsTable
+      Events:
+        CreateReservationApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /reservations
+            Method: POST
+
+  # Tool 7: GetReservations
+  GetReservationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-GetReservations
+      Description: Consulta las reservas por usuario, viaje o estado (Tool GetReservations y GET /reservations)
+      Handler: handlers.get_reservations_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReservationsTable
+      Events:
+        GetReservationsApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /reservations
+            Method: GET
+
+  # Tool 8: UpdateReservation
+  UpdateReservationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-UpdateReservation
+      Description: Actualiza los datos o el estado (Simulada, Pendiente, Confirmada) de una reserva (Tool UpdateReservation y PUT /reservations/{reservationId})
+      Handler: handlers.update_reservation_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReservationsTable
+      Events:
+        UpdateReservationApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /reservations/{reservationId}
+            Method: PUT
+        UpdateReservationRootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /reservations
+            Method: PUT
+
+  # Tool 9 (Funcionalidad Opcional): CompareBudget — Comparador de Presupuestos
+  CompareBudgetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-CompareBudget
+      Description: Compara el presupuesto asignado al viaje frente a costos de vuelos, hoteles, actividades e itinerarios en DynamoDB (Tool CompareBudget y /budget-comparison)
+      Handler: handlers.compare_budget_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TripsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ItinerariesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ReservationsTable
+      Events:
+        GetBudgetComparisonApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /budget-comparison
+            Method: GET
+        PostBudgetComparisonApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /budget-comparison
+            Method: POST
+        GetTripBudgetComparisonApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips/{tripId}/budget-comparison
+            Method: GET
+
+  # Consultas en vivo a Servidores MCP desde el Frontend (Vuelos y Clima)
+  FlightsMcpProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-FlightsMcpProxy
+      Description: Consulta en tiempo real al servidor MCP de vuelos (https://ignav.com/mcp)
+      Handler: handlers.flights_mcp_handler
+      Events:
+        GetFlightsMcpApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /flights
+            Method: GET
+
+  WeatherMcpProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-WeatherMcpProxy
+      Description: Consulta en tiempo real al servidor MCP meteorologico (Open-Meteo)
+      Handler: handlers.weather_mcp_handler
+      Events:
+        GetWeatherMcpApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /weather
+            Method: GET
+
+  UserProfileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-UserProfile
+      Description: Consulta y actualiza el perfil y preferencias del usuario (GET/PUT /users/{userId} y /profile)
+      Handler: handlers.user_profile_handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        GetUserProfileApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /users/{userId}
+            Method: GET
+        UpdateUserProfileApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /users/{userId}
+            Method: PUT
+        GetProfileApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /profile
+            Method: GET
+        PostProfileApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /profile
+            Method: POST
+
+  # ============================================================================
+  # 4. HOSTING FRONTEND: AMAZON S3 STATIC WEBSITE
+  # ============================================================================
+  TripPlannerFrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "tripplanner-ai-frontend-${AWS::AccountId}-${AWS::Region}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+
+  TripPlannerFrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TripPlannerFrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub "${TripPlannerFrontendBucket.Arn}/*"
+
+Outputs:
+  ApiGatewayUrl:
+    Description: URL base de Amazon API Gateway para el Canal 1 (Operaciones de Negocio)
+    Value: !Sub "https://${TripPlannerApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  FrontendBucketName:
+    Description: Nombre del bucket S3 de hosting del Frontend
+    Value: !Ref TripPlannerFrontendBucket
+  FrontendWebsiteUrl:
+    Description: URL publica del sitio web estatico en Amazon S3
+    Value: !GetAtt TripPlannerFrontendBucket.WebsiteURL
+  TripsTableName:
+    Description: Tabla DynamoDB de Viajes
+    Value: !Ref TripsTable
+  ItinerariesTableName:
+    Description: Tabla DynamoDB de Itinerarios
+    Value: !Ref ItinerariesTable
+  ReservationsTableName:
+    Description: Tabla DynamoDB de Reservas
+    Value: !Ref ReservationsTable
+  UsersTableName:
+    Description: Tabla DynamoDB de Usuarios y Preferencias
+    Value: !Ref UsersTable

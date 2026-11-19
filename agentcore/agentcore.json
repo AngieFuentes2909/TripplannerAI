@@ -1,0 +1,124 @@
+{
+  "$schema": "https://schema.agentcore.aws.dev/v1/agentcore.json",
+  "name": "workshop2",
+  "version": 1,
+  "managedBy": "CDK",
+  "tags": {
+    "agentcore:created-by": "agentcore-cli",
+    "agentcore:project-name": "workshop2"
+  },
+  "runtimes": [
+    {
+      "name": "FlightsAgent",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/FlightsAgent/",
+      "runtimeVersion": "PYTHON_3_12",
+      "networkMode": "PUBLIC",
+      "protocol": "A2A",
+      "additionalPolicies": [
+        "policies/bedrock-nova-policy.json"
+      ],
+      "envVars": [
+        { "name": "BEDROCK_MODEL_ID", "value": "amazon.nova-lite-v1:0" },
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "TRAVEL_MCP_URL", "value": "https://ignav.com/mcp" },
+        { "name": "TRAVEL_MCP_API_KEY", "value": "ignav_fy74UtSIEoLc7G0Y-waC9mgIESf16QGJ" }
+      ]
+    },
+    {
+      "name": "WeatherAgent",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/WeatherAgent/",
+      "runtimeVersion": "PYTHON_3_12",
+      "networkMode": "PUBLIC",
+      "protocol": "A2A",
+      "additionalPolicies": [
+        "policies/bedrock-nova-policy.json"
+      ],
+      "envVars": [
+        { "name": "BEDROCK_MODEL_ID", "value": "amazon.nova-lite-v1:0" },
+        { "name": "AWS_REGION", "value": "us-east-1" }
+      ]
+    },
+    {
+      "name": "OrchestratorAgent",
+      "build": "CodeZip",
+      "entrypoint": "main.py",
+      "codeLocation": "app/OrchestratorAgent/",
+      "runtimeVersion": "PYTHON_3_12",
+      "networkMode": "PUBLIC",
+      "protocol": "HTTP",
+      "additionalPolicies": [
+        "policies/a2a-invoke-policy.json"
+      ],
+      "envVars": [
+        { "name": "FLIGHTS_AGENT_URL", "value": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A744617282997%3Aruntime%2Fworkshop2_FlightsAgent-fC6aTM9OHc/invocations" },
+        { "name": "WEATHER_AGENT_URL", "value": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A744617282997%3Aruntime%2Fworkshop2_WeatherAgent-s7pABA4FJm/invocations" },
+        { "name": "BEDROCK_MODEL_ID", "value": "amazon.nova-lite-v1:0" },
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "TRIP_MEMORY_ID", "value": "workshop2_TripPlannerMemory-Z4G3f5GSF9" },
+        { "name": "TRIPS_TABLE", "value": "TripPlanner-Trips" },
+        { "name": "ITINERARIES_TABLE", "value": "TripPlanner-Itineraries" },
+        { "name": "RESERVATIONS_TABLE", "value": "TripPlanner-Reservations" }
+      ]
+    }
+  ],
+  "memories": [
+    {
+      "name": "TripPlannerMemory",
+      "description": "Memoria persistente para TripPlanner con preferencias, resumenes de sesion y hechos",
+      "eventExpiryDuration": 30,
+      "strategies": [
+        {
+          "type": "USER_PREFERENCE",
+          "name": "TripUserPreferences",
+          "description": "Preferencias de viaje del usuario",
+          "namespaceTemplates": [
+            "/preferences/{actorId}/"
+          ]
+        },
+        {
+          "type": "SUMMARIZATION",
+          "name": "TripSessionSummaries",
+          "description": "Resumenes de conversacion por sesion",
+          "namespaceTemplates": [
+            "/summaries/{actorId}/{sessionId}/"
+          ]
+        },
+        {
+          "type": "SEMANTIC",
+          "name": "TripUserFacts",
+          "description": "Hechos y datos semanticos relevantes del usuario",
+          "namespaceTemplates": [
+            "/facts/{actorId}/"
+          ]
+        },
+        {
+          "type": "EPISODIC",
+          "name": "TripEpisodes",
+          "description": "Episodios y reflexiones de reservas y viajes concretos del usuario",
+          "namespaceTemplates": [
+            "/episodes/{actorId}/events/"
+          ],
+          "reflectionNamespaceTemplates": [
+            "/episodes/{actorId}/"
+          ]
+        }
+      ]
+    }
+  ],
+  "knowledgeBases": [],
+  "credentials": [],
+  "evaluators": [],
+  "onlineEvalConfigs": [],
+  "agentCoreGateways": [],
+  "policyEngines": [],
+  "configBundles": [],
+  "abTests": [],
+  "harnesses": [],
+  "datasets": [],
+  "capacityProviders": [],
+  "payments": []
+}
