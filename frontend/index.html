@@ -403,77 +403,42 @@
     }
 
     /* =========================================================================
-       DASHBOARD EDITORIAL HERO & STATS
+       DASHBOARD EXECUTIVE HERO & STATS
        ========================================================================= */
-    .editorial-feature {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      display: grid;
-      grid-template-columns: 1.35fr 1fr;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    @media (max-width: 900px) {
-      .editorial-feature { grid-template-columns: 1fr; }
-    }
-
-    .editorial-body {
-      padding: 28px 30px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .eyebrow {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-      margin-bottom: 8px;
-    }
-
-    .editorial-title {
-      font-size: 1.75rem;
-      font-weight: 600;
-      color: var(--ink-900);
-      line-height: 1.2;
-      margin-bottom: 12px;
-    }
-
-    .editorial-brief {
-      font-size: 0.88rem;
-      color: var(--ink-700);
-      line-height: 1.6;
-      padding: 12px 14px;
-      background: var(--bg-app);
-      border-left: 2px solid var(--ink-900);
-      margin-bottom: 20px;
-    }
-
-    .editorial-photo {
-      background: url('https://images.unsplash.com/photo-1583531352515-8884af319dc1?auto=format&fit=crop&w=1000&q=80') center/cover no-repeat;
-      min-height: 220px;
-      position: relative;
-      display: flex;
-      align-items: flex-end;
-      padding: 18px;
-    }
-
-    .photo-caption {
-      background: rgba(15, 23, 42, 0.82);
-      backdrop-filter: blur(8px);
+    .executive-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f766e 100%);
       color: #ffffff;
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      font-size: 0.76rem;
-      width: 100%;
+      border-radius: var(--radius-lg);
+      padding: 26px 30px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .executive-hero-title {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+      color: #ffffff;
+    }
+
+    .executive-hero-desc {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      max-width: 620px;
+      line-height: 1.5;
+    }
+
+    .executive-hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .metrics-row {
@@ -1035,74 +1000,89 @@
     <main class="workspace">
 
       <!-- ===================================================================
-           MÓDULO 1: DASHBOARD
+           MÓDULO 1: DASHBOARD EJECUTIVO
            =================================================================== -->
       <section class="module-view active" id="view-dashboard">
-        <div class="editorial-feature">
-          <div class="editorial-body">
-            <div>
-              <div class="eyebrow">Planificación Destacada · Cartagena de Indias</div>
-              <h1 class="editorial-title serif">Escapada de 4 días desde Bogotá al Caribe Colombiano</h1>
-              <div class="editorial-brief">
-                "Quiero organizar unas vacaciones de cuatro días en Cartagena. Salgo desde Bogotá, viajo con dos personas más y tengo un presupuesto de 5 millones de pesos. Quiero conocer el clima, encontrar vuelos y organizar algunas actividades turísticas."
-              </div>
+        <div class="executive-hero">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span class="pill" style="background:rgba(255,255,255,0.15); color:#ffffff; border:1px solid rgba(255,255,255,0.25);">
+                <span class="dot" style="background:#10b981;"></span> Arquitectura Multiagente AWS Serverless
+              </span>
+              <span style="font-size:0.75rem; color:#94a3b8;">Usuario activo: <strong style="color:#ffffff;" id="dash-user-label">viajero_colombia_01</strong></span>
             </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn btn-primary" onclick="runMandatoryDemoChat()">
-                <i data-lucide="message-square"></i> Consultar al Asistente en Vivo
-              </button>
-              <button class="btn btn-outline" onclick="seedMandatoryScenarioToDynamoDB()">
-                <i data-lucide="check-circle-2"></i> Cargar Viaje, Itinerario y Reserva Base
-              </button>
-            </div>
+            <h1 class="executive-hero-title">Centro de Gestión y Control Financiero</h1>
+            <p class="executive-hero-desc">
+              Planificación agéntica con streaming en tiempo real en Amazon Bedrock AgentCore, integración A2A con MCP de vuelos y clima, y persistencia transaccional en Amazon DynamoDB.
+            </p>
           </div>
-
-          <div class="editorial-photo">
-            <div class="photo-caption">
-              <div>
-                <strong>Cartagena (CTG)</strong> · 4 Días / 3 Viajeros
-              </div>
-              <span class="num" style="font-weight:600;">Presupuesto: $5.000.000 COP</span>
-            </div>
+          <div class="executive-hero-actions">
+            <button class="btn btn-primary" onclick="switchView('chat', 'Asistente Conversacional')" style="background:#ffffff; color:#0f172a; border:none;">
+              <i data-lucide="message-square"></i> Asistente IA (Streaming)
+            </button>
+            <button class="btn btn-outline" onclick="toggleNewTripForm(true)" style="background:rgba(255,255,255,0.1); color:#ffffff; border-color:rgba(255,255,255,0.25);">
+              <i data-lucide="plus"></i> Crear Viaje
+            </button>
           </div>
         </div>
 
         <div class="metrics-row">
           <div class="metric-box">
-            <div class="metric-label">Viajes Activos</div>
-            <div class="metric-val num" id="kpi-trips">0</div>
-            <div class="metric-note">Sincronizados en DynamoDB</div>
-          </div>
-          <div class="metric-box">
-            <div class="metric-label">Presupuesto Total</div>
+            <div class="metric-label">Presupuesto Global Asignado</div>
             <div class="metric-val num" id="kpi-budget">$0 COP</div>
-            <div class="metric-note">Pesos Colombianos</div>
+            <div class="metric-note">Límite financiero en Viajes</div>
           </div>
           <div class="metric-box">
-            <div class="metric-label">Reservas Registradas</div>
-            <div class="metric-val num" id="kpi-reservations">0</div>
+            <div class="metric-label">Comprometido en Reservas</div>
+            <div class="metric-val num" id="kpi-committed">$0 COP</div>
+            <div class="metric-note" id="kpi-committed-pct">0% del presupuesto</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Margen Libre Disponible</div>
+            <div class="metric-val num" id="kpi-margin">$0 COP</div>
+            <div class="metric-note" id="kpi-margin-health">Presupuesto balanceado</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Viajes y Reservas Activas</div>
+            <div class="metric-val num" id="kpi-trips">0</div>
             <div class="metric-note" id="kpi-res-breakdown">0 confirmadas</div>
           </div>
-          <div class="metric-box">
-            <div class="metric-label">Días con Itinerario</div>
-            <div class="metric-val num" id="kpi-itinerary-days">0</div>
-            <div class="metric-note">Agenda detallada por día</div>
+        </div>
+
+        <!-- Telemetría de Agentes y Servicios Cloud -->
+        <div class="surface-card" style="margin-bottom:24px; padding:16px 20px; background:var(--bg-subtle);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-500);">
+              Telemetría de Infraestructura Cloud en Vivo (us-east-1)
+            </div>
+            <div style="display:flex; gap:18px; font-size:0.78rem; color:var(--ink-700); flex-wrap:wrap;">
+              <span><span class="dot" style="display:inline-block; margin-right:4px;"></span><strong>Canal 1:</strong> API Gateway REST + Lambda</span>
+              <span><span class="dot" style="display:inline-block; margin-right:4px;"></span><strong>Canal 2:</strong> AgentCore Runtime (Streaming)</span>
+              <span><span class="dot" style="display:inline-block; margin-right:4px;"></span><strong>Persistencia:</strong> Amazon DynamoDB (4 Tablas)</span>
+              <span><span class="dot" style="display:inline-block; margin-right:4px;"></span><strong>Protocolo A2A:</strong> FlightsAgent & WeatherAgent</span>
+            </div>
           </div>
         </div>
 
         <div class="two-col">
           <div class="surface-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-              <h3 style="font-size:0.95rem; font-weight:700;">Próximos Viajes</h3>
-              <button class="btn btn-outline btn-sm" onclick="switchView('trips', 'Viajes e Itinerarios')">Ver todos</button>
+              <h3 style="font-size:0.95rem; font-weight:700;">Mis Viajes e Itinerarios</h3>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-outline btn-sm" onclick="switchView('trips', 'Mis Viajes e Itinerarios')">Ver y Comparar</button>
+                <button class="btn btn-primary btn-sm" onclick="toggleNewTripForm(true)">+ Nuevo</button>
+              </div>
             </div>
             <div id="dashboard-trips-list"></div>
           </div>
 
           <div class="surface-card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-              <h3 style="font-size:0.95rem; font-weight:700;">Reservas Recientes</h3>
-              <button class="btn btn-outline btn-sm" onclick="switchView('reservations', 'Reservas')">Administrar</button>
+              <h3 style="font-size:0.95rem; font-weight:700;">Reservas Registradas</h3>
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-outline btn-sm" onclick="switchView('reservations', 'Gestión de Reservas')">Gestionar</button>
+                <button class="btn btn-primary btn-sm" onclick="toggleReservationForm(true)">+ Reservar</button>
+              </div>
             </div>
             <div id="dashboard-reservations-list"></div>
           </div>
@@ -1906,50 +1886,88 @@
     // MÓDULO 1: DASHBOARD
     // =========================================================================
     function renderDashboard() {
+      const userLbl = document.getElementById('dash-user-label');
+      if (userLbl) userLbl.textContent = actorId;
+
       document.getElementById('kpi-trips').textContent = state.trips.length;
       const budgetSum = state.trips.reduce((acc, t) => acc + Number(t.budgetCop || 0), 0);
       document.getElementById('kpi-budget').textContent = formatCop(budgetSum);
-      document.getElementById('kpi-reservations').textContent = state.reservations.length;
 
+      const resTotal = state.reservations.reduce((acc, r) => acc + Number(r.priceCop || 0), 0);
+      const kpiCommitted = document.getElementById('kpi-committed');
+      if (kpiCommitted) kpiCommitted.textContent = formatCop(resTotal);
+
+      const kpiPct = document.getElementById('kpi-committed-pct');
+      const pct = budgetSum > 0 ? Math.round((resTotal / budgetSum) * 100) : 0;
+      if (kpiPct) kpiPct.textContent = `${pct}% del presupuesto total`;
+
+      const diff = budgetSum - resTotal;
+      const kpiMargin = document.getElementById('kpi-margin');
+      if (kpiMargin) {
+        kpiMargin.textContent = formatCop(diff);
+        kpiMargin.style.color = diff >= 0 ? '#10b981' : '#ef4444';
+      }
+
+      const kpiHealth = document.getElementById('kpi-margin-health');
+      if (kpiHealth) {
+        kpiHealth.textContent = diff >= 0 ? 'Margen financiero disponible' : 'Sobrecosto detectado';
+      }
+
+      document.getElementById('kpi-reservations').textContent = state.reservations.length;
       const sim = state.reservations.filter(r => r.status === 'Simulada').length;
       const pen = state.reservations.filter(r => r.status === 'Pendiente').length;
       const conf = state.reservations.filter(r => r.status === 'Confirmada').length;
       document.getElementById('kpi-res-breakdown').textContent = `${conf} confirmadas · ${pen} pendientes · ${sim} simuladas`;
 
-      let daysCount = 0;
-      state.trips.forEach(t => (t.itineraries || []).forEach(it => { daysCount += (it.days || []).length; }));
-      document.getElementById('kpi-itinerary-days').textContent = daysCount;
-
       const tBox = document.getElementById('dashboard-trips-list');
       if (!state.trips.length) {
-        tBox.innerHTML = `<div style="padding:20px 0; color:var(--ink-500); font-size:0.84rem;">No hay viajes registrados. Puedes cargar el caso base de Cartagena desde el panel superior.</div>`;
+        tBox.innerHTML = `
+          <div style="padding:28px 16px; text-align:center; color:var(--ink-500); font-size:0.84rem;">
+            No hay viajes registrados para <strong>${actorId}</strong> en DynamoDB.<br>
+            <button class="btn btn-primary btn-sm" onclick="toggleNewTripForm(true)" style="margin-top:10px;">
+              + Registrar Mi Primer Viaje
+            </button>
+          </div>`;
       } else {
-        tBox.innerHTML = state.trips.slice(0, 3).map(t => `
-          <div style="padding:12px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <div style="font-weight:600; font-size:0.88rem; color:var(--ink-900);">${t.title}</div>
-              <div style="font-size:0.78rem; color:var(--ink-500); margin-top:2px;">
-                ${t.origin} → ${t.destination} · <span class="num">${t.startDate}</span> al <span class="num">${t.endDate}</span> · ${t.travelers} personas
+        tBox.innerHTML = state.trips.slice(0, 4).map(t => {
+          const tResTotal = state.reservations.filter(r => r.tripId === t.tripId).reduce((acc, r) => acc + Number(r.priceCop || 0), 0);
+          const tPct = t.budgetCop ? Math.min(100, Math.round((tResTotal / t.budgetCop) * 100)) : 0;
+          return `
+            <div style="padding:12px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.88rem; color:var(--ink-900);">${t.title}</div>
+                <div style="font-size:0.78rem; color:var(--ink-500); margin-top:2px;">
+                  ${t.origin} → ${t.destination} · <span class="num">${t.startDate}</span> al <span class="num">${t.endDate}</span> · ${t.travelers} personas
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="num" style="font-size:0.82rem; font-weight:600;">${formatCop(t.budgetCop)}</div>
+                <div style="display:flex; align-items:center; gap:6px; margin-top:4px; justify-content:flex-end;">
+                  <span class="pill pill-${t.status || 'Planificado'}">${t.status || 'Planificado'}</span>
+                  <span class="num" style="font-size:0.72rem; color:var(--ink-500);">${tPct}%</span>
+                </div>
               </div>
             </div>
-            <div style="text-align:right;">
-              <div class="num" style="font-size:0.82rem; font-weight:600;">${formatCop(t.budgetCop)}</div>
-              <span class="pill pill-${t.status || 'Planificado'}" style="margin-top:4px;">${t.status || 'Planificado'}</span>
-            </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       const rBox = document.getElementById('dashboard-reservations-list');
       if (!state.reservations.length) {
-        rBox.innerHTML = `<div style="padding:20px 0; color:var(--ink-500); font-size:0.84rem;">No hay reservas registradas aún.</div>`;
+        rBox.innerHTML = `
+          <div style="padding:28px 16px; text-align:center; color:var(--ink-500); font-size:0.84rem;">
+            No hay reservas registradas para <strong>${actorId}</strong> en DynamoDB.<br>
+            <button class="btn btn-outline btn-sm" onclick="switchView('flights', 'Consulta de Vuelos')" style="margin-top:10px;">
+              ✈️ Explorar Vuelos en Vivo
+            </button>
+          </div>`;
       } else {
         rBox.innerHTML = state.reservations.slice(0, 4).map(r => `
           <div style="padding:12px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
             <div>
               <div style="font-weight:600; font-size:0.86rem; color:var(--ink-900);">${r.title}</div>
               <div style="font-size:0.76rem; color:var(--ink-500); margin-top:2px;">
-                ${r.provider} · Ref: <code>${r.referenceCode || r.reservationId}</code>
+                ${r.provider} · Ref: <code>${r.referenceCode || r.reservationId}</code> · <span class="num">${r.date}</span>
               </div>
             </div>
             <div style="text-align:right;">
@@ -2277,6 +2295,35 @@
             }
           }
         }
+
+        // Acciones y componentes interactivos Agent-Driven UI
+        const lowerFull = fullText.toLowerCase();
+        let actionButtons = '';
+        if (lowerFull.includes('vuelo') || lowerFull.includes('volar') || prompt.toLowerCase().includes('vuelo')) {
+          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('flights')">✈️ Explorar Vuelos en Vivo</button>`;
+        }
+        if (lowerFull.includes('clima') || lowerFull.includes('temperatura') || prompt.toLowerCase().includes('clima')) {
+          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('weather')">🌤️ Ver Clima en Vivo (Cartagena)</button>`;
+        }
+        if (lowerFull.includes('itinerario') || lowerFull.includes('viaje') || lowerFull.includes('actividad') || prompt.toLowerCase().includes('viaje')) {
+          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('trips')">📅 Ver Itinerarios y Viajes</button>`;
+        }
+        if (lowerFull.includes('reserva') || prompt.toLowerCase().includes('reserva')) {
+          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('reservations')">📋 Ver Reservas en DynamoDB</button>`;
+        }
+        if (lowerFull.includes('presupuesto') || prompt.toLowerCase().includes('presupuesto')) {
+          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('trips'); setTimeout(() => { const el = document.getElementById('budget-comparison-card'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 150);">📊 Comparar Presupuesto</button>`;
+        }
+
+        if (actionButtons && !agentBubble.querySelector('.agent-action-bar')) {
+          agentBubble.innerHTML += `
+            <div class="agent-action-bar" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:10px; border-top:1px dashed var(--ink-200);">
+              <span style="font-size:0.72rem; color:var(--ink-500); width:100%; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">Componentes Visuales Vinculados (Agent-Driven UI):</span>
+              ${actionButtons}
+            </div>
+          `;
+        }
+
         setTimeout(() => refreshAllBusinessData(), 600);
       } catch (err) {
         document.getElementById('ch2-dot').className = 'dot warn';
@@ -2319,7 +2366,7 @@
         container.innerHTML = `
           <div class="surface-card" style="text-align:center; padding:32px; color:var(--ink-500);">
             No se recibieron vuelos desde el servidor MCP para <strong>${iataOrig} → ${iataDest}</strong> el <strong>${date}</strong>.<br>
-            <small>Intenta con otra fecha o ruta, o verifica que el servidor local del Canal 1 esté activo.</small>
+            <small>Intenta con otra fecha o ruta, o verifica la conectividad con API Gateway en AWS.</small>
           </div>`;
         return;
       }
