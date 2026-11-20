@@ -2918,7 +2918,6 @@
       }
 
       // Actualizar select del comparador de presupuestos con todos los viajes dinámicos
-      const sel = document.getElementById('bc-trip-select');
       const currentSelected = sel ? sel.value : null;
       const targetTripId = (currentSelected && state.trips.some(t => t.tripId === currentSelected))
         ? currentSelected
