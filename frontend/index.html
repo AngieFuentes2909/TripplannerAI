@@ -1356,7 +1356,7 @@
           <div class="filter-bar" style="background:var(--bg-app); margin-bottom:16px;">
             <div class="field">
               <label>Seleccionar Viaje</label>
-              <select class="input" id="bc-trip-select" onchange="runBudgetComparison()"></select>
+              <select class="input" id="bc-trip-select" onchange="runBudgetComparison(this.value)"></select>
             </div>
             <div class="field">
               <label>Simular Alojamiento Adicional (COP)</label>
@@ -1377,41 +1377,42 @@
         </div>
 
         <div class="surface-card" id="trip-form-card" style="display:none; margin-bottom:22px;">
-          <h3 style="font-size:0.96rem; font-weight:700; margin-bottom:14px;" id="trip-form-title">Registrar Nuevo Viaje</h3>
+          <h3 style="font-size:0.96rem; font-weight:700; margin-bottom:4px;" id="trip-form-title">Registrar Nuevo Viaje Personalizado</h3>
+          <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:14px;">Define cualquier destino del mundo, fechas y presupuesto para guardarlo en Amazon DynamoDB.</p>
           <input type="hidden" id="tf-id">
           <div class="filter-bar" style="padding:0; border:none; margin-bottom:14px;">
             <div class="field">
               <label>Nombre del Viaje</label>
-              <input class="input" id="tf-title" placeholder="Vacaciones en Cartagena">
+              <input class="input" id="tf-title" placeholder="Ej. Escapada a Medellín, Vacaciones en Madrid...">
             </div>
             <div class="field">
               <label>Ciudad Origen</label>
-              <input class="input" id="tf-origin" value="Bogotá">
+              <input class="input" id="tf-origin" placeholder="Ej. Barranquilla, Bogotá, Cali...">
             </div>
             <div class="field">
               <label>Ciudad Destino</label>
-              <input class="input" id="tf-dest" value="Cartagena">
+              <input class="input" id="tf-dest" placeholder="Ej. Medellín, Madrid, Cartagena, Miami...">
             </div>
             <div class="field">
               <label>Fecha Inicio</label>
-              <input type="date" class="input num" id="tf-start" value="2026-11-20">
+              <input type="date" class="input num" id="tf-start">
             </div>
             <div class="field">
               <label>Fecha Regreso</label>
-              <input type="date" class="input num" id="tf-end" value="2026-11-23">
+              <input type="date" class="input num" id="tf-end">
             </div>
             <div class="field">
               <label>Viajeros</label>
-              <input type="number" class="input num" id="tf-travelers" value="3" min="1">
+              <input type="number" class="input num" id="tf-travelers" value="2" min="1" max="50">
             </div>
             <div class="field">
               <label>Presupuesto (COP)</label>
-              <input type="number" class="input num" id="tf-budget" value="5000000" step="100000">
+              <input type="number" class="input num" id="tf-budget" placeholder="Ej. 3500000" step="50000">
             </div>
             <div class="field">
               <label>Estado</label>
               <select class="input" id="tf-status">
-                <option value="Planificado">Planificado</option>
+                <option value="Planificado" selected>Planificado</option>
                 <option value="Confirmado">Confirmado</option>
                 <option value="En Curso">En Curso</option>
                 <option value="Completado">Completado</option>
@@ -1420,7 +1421,7 @@
           </div>
           <div style="display:flex; justify-content:flex-end; gap:8px;">
             <button class="btn btn-outline" onclick="toggleNewTripForm(false)">Cancelar</button>
-            <button class="btn btn-primary" onclick="submitTripForm()">Guardar Viaje</button>
+            <button class="btn btn-primary" id="btn-save-trip" onclick="submitTripForm()">Guardar Viaje en AWS</button>
           </div>
         </div>
 
@@ -1467,23 +1468,23 @@
             </div>
             <div class="field">
               <label>Proveedor / Aerolínea</label>
-              <input class="input" id="rf-provider" value="Avianca">
+              <input class="input" id="rf-provider" placeholder="Ej. Avianca, LATAM, Hotel Intercontinental...">
             </div>
             <div class="field">
-              <label>Descripción</label>
-              <input class="input" id="rf-title" value="Vuelo AV 9518 Bogotá — Cartagena (3 pasajeros)">
+              <label>Descripción del Servicio</label>
+              <input class="input" id="rf-title" placeholder="Ej. Tiquete aéreo de ida y regreso, Reserva hotelera...">
             </div>
             <div class="field">
               <label>Fecha</label>
-              <input type="date" class="input num" id="rf-date" value="2026-11-20">
+              <input type="date" class="input num" id="rf-date">
             </div>
             <div class="field">
               <label>Valor Total (COP)</label>
-              <input type="number" class="input num" id="rf-price" value="1380000" step="20000">
+              <input type="number" class="input num" id="rf-price" placeholder="Ej. 520000" step="10000">
             </div>
             <div class="field">
-              <label>Pasajeros</label>
-              <input type="number" class="input num" id="rf-pax" value="3" min="1">
+              <label>Pasajeros / Huéspedes</label>
+              <input type="number" class="input num" id="rf-pax" value="2" min="1">
             </div>
             <div class="field">
               <label>Estado</label>
@@ -1558,13 +1559,98 @@
     </div>
   </div>
 
+  <!-- MODAL RESERVA DE VUELO Y ASOCIACIÓN DE VIAJE -->
+  <div class="modal-backdrop" id="flight-reserve-modal">
+    <div class="modal-dialog" style="max-width:540px;">
+      <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:4px;">Asociar Reserva de Vuelo a un Viaje</h3>
+      <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:14px;">Elige si deseas asociar este vuelo a un viaje existente o registrar uno nuevo en Amazon DynamoDB.</p>
+      
+      <div id="frm-flight-summary" style="background:var(--bg-subtle); padding:12px; border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:14px;"></div>
+
+      <input type="hidden" id="frm-airline">
+      <input type="hidden" id="frm-flightno">
+      <input type="hidden" id="frm-orig">
+      <input type="hidden" id="frm-dest">
+      <input type="hidden" id="frm-date">
+      <input type="hidden" id="frm-total">
+      <input type="hidden" id="frm-pax">
+      <input type="hidden" id="frm-dep">
+      <input type="hidden" id="frm-arr">
+
+      <div style="margin-bottom:14px;">
+        <label style="font-size:0.8rem; font-weight:600; color:var(--ink-700); display:block; margin-bottom:6px;">¿A qué viaje deseas vincular esta reserva?</label>
+        
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.84rem; cursor:pointer;">
+            <input type="radio" name="frm-mode" value="new" id="frm-mode-new" checked onchange="toggleFrmTripMode()">
+            <strong>Crear un nuevo viaje personalizado</strong> para esta ruta
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.84rem; cursor:pointer;">
+            <input type="radio" name="frm-mode" value="existing" id="frm-mode-existing" onchange="toggleFrmTripMode()">
+            Asociar a un viaje existente en DynamoDB
+          </label>
+        </div>
+      </div>
+
+      <div id="frm-new-trip-fields" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
+        <div class="field" style="margin-bottom:10px;">
+          <label>Nombre del Viaje</label>
+          <input class="input" id="frm-new-title" placeholder="Ej. Viaje a Medellín desde Barranquilla">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <div class="field">
+            <label>Presupuesto Total (COP)</label>
+            <input type="number" class="input num" id="frm-new-budget" step="50000" placeholder="Ej. 3500000">
+          </div>
+          <div class="field">
+            <label>Viajeros</label>
+            <input type="number" class="input num" id="frm-new-pax" min="1" max="50" value="2">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="field">
+            <label>Fecha de Salida</label>
+            <input type="date" class="input num" id="frm-new-start">
+          </div>
+          <div class="field">
+            <label>Fecha de Regreso</label>
+            <input type="date" class="input num" id="frm-new-end">
+          </div>
+        </div>
+      </div>
+
+      <div id="frm-existing-trip-fields" style="display:none; margin-bottom:14px;">
+        <div class="field">
+          <label>Selecciona el Viaje Existente</label>
+          <select class="input" id="frm-existing-select"></select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:18px;">
+        <label>Estado de la Reserva</label>
+        <select class="input" id="frm-res-status">
+          <option value="Confirmada">Confirmada</option>
+          <option value="Simulada" selected>Simulada</option>
+          <option value="Pendiente">Pendiente</option>
+        </select>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-outline" onclick="closeFlightBookingModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-flight-res" onclick="submitFlightBookingModal()">
+          Guardar Reserva y Viaje en AWS
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL CONFIGURACIÓN -->
   <div class="modal-backdrop" id="config-modal">
     <div class="modal-dialog">
       <h3 style="font-size:1rem; font-weight:700; margin-bottom:4px;">Conexiones de Servicios</h3>
       <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:16px;">Configura las URLs de API Gateway (Canal 1) y Bedrock AgentCore (Canal 2).</p>
       <div class="field" style="margin-bottom:12px;">
-        <label>URL Canal 1 (API Gateway o Local :8085)</label>
+        <label>URL Canal 1 (Amazon API Gateway REST en AWS Cloud)</label>
         <input class="input num" id="cfg-api-url">
       </div>
       <div class="field" style="margin-bottom:12px;">
@@ -1657,161 +1743,29 @@
     }
 
     // =========================================================================
-    // CANAL 1: CLIENTE REST CON RESPALDO LOCAL
+    // CANAL 1: CLIENTE REST DIRECTO A AMAZON API GATEWAY (100% CLOUD)
     // =========================================================================
-    function getLocalMirror() {
-      try {
-        const raw = localStorage.getItem('tripplanner_ddb_mirror');
-        if (raw) return JSON.parse(raw);
-      } catch (e) {}
-      return { trips: [], reservations: [] };
-    }
-
-    function saveLocalMirror(m) {
-      localStorage.setItem('tripplanner_ddb_mirror', JSON.stringify(m));
-    }
-
     async function apiChannel1(path, method = 'GET', bodyObj = null) {
       const url = apiGatewayUrl.replace(/\/$/, '') + path;
+      const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Actor-Id': actorId },
+      };
+      if (bodyObj) opts.body = JSON.stringify(bodyObj);
       try {
-        const opts = {
-          method,
-          headers: { 'Content-Type': 'application/json', 'X-Actor-Id': actorId },
-        };
-        if (bodyObj) opts.body = JSON.stringify(bodyObj);
         const resp = await fetch(url, opts);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        if (!resp.ok) {
+          const errText = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${errText}`);
+        }
         const data = await resp.json();
         document.getElementById('ch1-dot').className = 'dot';
         return data;
       } catch (err) {
         document.getElementById('ch1-dot').className = 'dot warn';
-        const mirror = getLocalMirror();
-        if (path.startsWith('/trips') && method === 'GET') return { success: true, trips: mirror.trips };
-        if (path === '/trips' && method === 'POST') {
-          const t = {
-            tripId: bodyObj.tripId || ('trip_' + Math.random().toString(36).substring(2, 8)),
-            userId: actorId,
-            title: bodyObj.title || ('Viaje a ' + bodyObj.destination),
-            origin: bodyObj.origin || 'Bogotá',
-            destination: bodyObj.destination || 'Cartagena',
-            startDate: bodyObj.startDate || '2026-11-20',
-            endDate: bodyObj.endDate || '2026-11-23',
-            travelers: Number(bodyObj.travelers || 3),
-            budgetCop: Number(bodyObj.budgetCop || 5000000),
-            status: bodyObj.status || 'Planificado',
-            weatherSummary: bodyObj.weatherSummary || '',
-            itineraries: bodyObj.itineraries || [],
-            reservations: [],
-            createdAt: new Date().toISOString(),
-          };
-          mirror.trips.unshift(t);
-          saveLocalMirror(mirror);
-          return { success: true, trip: t };
-        }
-        if (path.startsWith('/trips') && method === 'PUT') {
-          const id = bodyObj.tripId || path.split('/')[2];
-          const idx = mirror.trips.findIndex(x => x.tripId === id);
-          if (idx >= 0) {
-            mirror.trips[idx] = { ...mirror.trips[idx], ...bodyObj };
-            saveLocalMirror(mirror);
-            return { success: true, trip: mirror.trips[idx] };
-          }
-        }
-        if (path === '/itineraries' && method === 'POST') {
-          const itin = {
-            itineraryId: 'itin_' + Math.random().toString(36).substring(2, 8),
-            tripId: bodyObj.tripId,
-            destination: bodyObj.destination || 'Cartagena',
-            summary: bodyObj.summary || 'Itinerario por días',
-            days: bodyObj.days || [],
-          };
-          const t = mirror.trips.find(x => x.tripId === bodyObj.tripId) || mirror.trips[0];
-          if (t) { t.itineraries = [itin]; saveLocalMirror(mirror); }
-          return { success: true, itinerary: itin };
-        }
-        if (path.startsWith('/itineraries') && method === 'PUT') {
-          const t = mirror.trips.find(x => x.tripId === bodyObj.tripId) || mirror.trips[0];
-          if (t && t.itineraries && t.itineraries[0]) {
-            t.itineraries[0].days = bodyObj.days;
-            saveLocalMirror(mirror);
-          }
-          return { success: true };
-        }
-        if (path.startsWith('/reservations') && method === 'GET') return { success: true, reservations: mirror.reservations };
-        if (path === '/reservations' && method === 'POST') {
-          const r = {
-            reservationId: 'res_' + Math.random().toString(36).substring(2, 8),
-            tripId: bodyObj.tripId || (mirror.trips[0] ? mirror.trips[0].tripId : 'trip_ctg'),
-            userId: actorId,
-            type: bodyObj.type || 'Vuelo',
-            provider: bodyObj.provider || 'Avianca',
-            title: bodyObj.title || 'Reserva de Vuelo',
-            referenceCode: 'TP-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-            date: bodyObj.date || '2026-11-20',
-            priceCop: Number(bodyObj.priceCop || 0),
-            passengers: Number(bodyObj.passengers || 3),
-            status: bodyObj.status || 'Simulada',
-            createdAt: new Date().toISOString(),
-          };
-          mirror.reservations.unshift(r);
-          saveLocalMirror(mirror);
-          return { success: true, reservation: r };
-        }
-        if (path.startsWith('/reservations') && method === 'PUT') {
-          const id = bodyObj.reservationId || path.split('/')[2];
-          const idx = mirror.reservations.findIndex(x => x.reservationId === id);
-          if (idx >= 0) {
-            mirror.reservations[idx] = { ...mirror.reservations[idx], ...bodyObj };
-            saveLocalMirror(mirror);
-            return { success: true, reservation: mirror.reservations[idx] };
-          }
-        }
-        if (path.startsWith('/budget-comparison') || path.includes('/budget-comparison')) {
-          const t = mirror.trips[0];
-          if (!t) return { success: false };
-          const alloc = Number(t.budgetCop || 0);
-          const tv = Math.max(1, Number(t.travelers || 1));
-          const resList = mirror.reservations.filter(r => r.tripId === t.tripId && r.status !== 'Cancelada');
-          const fl = resList.filter(r => (r.type || '').toLowerCase() === 'vuelo').reduce((a, r) => a + Number(r.priceCop || 0), 0);
-          const ho = resList.filter(r => (r.type || '').toLowerCase() === 'hotel').reduce((a, r) => a + Number(r.priceCop || 0), 0);
-          const tr = resList.filter(r => (r.type || '').toLowerCase() === 'transporte').reduce((a, r) => a + Number(r.priceCop || 0), 0);
-          let itAct = 0;
-          (t.itineraries || []).forEach(it => (it.days || []).forEach(d => (d.activities || []).forEach(a => { itAct += Number(a.costCop || 0); })));
-          const comm = fl + ho + tr + itAct + Number(bodyObj?.estimatedHotelCop || 0) + Number(bodyObj?.estimatedFlightCop || 0);
-          const diff = alloc - comm;
-          const pct = alloc > 0 ? Math.round((comm / alloc) * 1000) / 10 : 0;
-          return {
-            success: true,
-            comparison: {
-              tripId: t.tripId,
-              tripTitle: t.title,
-              origin: t.origin,
-              destination: t.destination,
-              travelers: tv,
-              budgetAllocatedCop: alloc,
-              totalCommittedCop: comm,
-              differenceCop: diff,
-              usagePercentage: pct,
-              perTravelerAllocatedCop: Math.round(alloc / tv),
-              perTravelerCommittedCop: Math.round(comm / tv),
-              categories: { flightsCop: fl + Number(bodyObj?.estimatedFlightCop || 0), hotelsCop: ho + Number(bodyObj?.estimatedHotelCop || 0), activitiesCop: itAct, transportCop: tr },
-              reservationsByStatus: {
-                confirmedCop: resList.filter(r => r.status === 'Confirmada').reduce((a, r) => a + Number(r.priceCop || 0), 0),
-                pendingCop: resList.filter(r => r.status === 'Pendiente').reduce((a, r) => a + Number(r.priceCop || 0), 0),
-                simulatedCop: resList.filter(r => r.status === 'Simulada').reduce((a, r) => a + Number(r.priceCop || 0), 0),
-              },
-              alert: {
-                level: diff < 0 ? 'EXCEDIDO' : (pct >= 80 ? 'PRECAUCION' : 'OPTIMO'),
-                title: diff < 0 ? 'Alerta: Presupuesto Excedido' : (pct >= 80 ? 'Margen Ajustado (Precaución)' : 'Presupuesto Saludable (Margen Óptimo)'),
-                message: diff < 0
-                  ? `Los costos estimados superan el presupuesto en ${formatCop(Math.abs(diff))} (${pct}% utilizado).`
-                  : `El viaje utiliza el ${pct}% del presupuesto. Margen disponible: ${formatCop(diff)}.`,
-              },
-            },
-          };
-        }
-        return { success: false };
+        console.error('Error invocando API Gateway en AWS:', err);
+        showToast('Error en API Cloud: ' + err.message);
+        return { success: false, error: err.message, trips: [], reservations: [] };
       }
     }
 
@@ -2293,7 +2247,7 @@
               <div class="num" style="font-size:1.15rem; font-weight:700; color:var(--ink-900);">${formatCop(total)}</div>
               <div style="font-size:0.72rem; color:var(--ink-500); margin-bottom:8px;">Total ${pax} pasajero(s)</div>
               <button class="btn btn-primary btn-sm"
-                onclick="quickReserveFlight('${f.airline}', '${f.flightNo}', '${iataOrig}', '${iataDest}', '${date}', ${total}, ${pax}, '${f.dep}', '${f.arr}')">
+                onclick="openFlightBookingModal('${f.airline}', '${f.flightNo}', '${iataOrig}', '${iataDest}', '${date}', ${total}, ${pax}, '${f.dep}', '${f.arr}')">
                 Seleccionar y Reservar
               </button>
             </div>
@@ -2302,21 +2256,153 @@
       }).join('');
     }
 
-    async function quickReserveFlight(airline, code, orig, dest, date, total, pax, dep, arr) {
-      const tripId = state.trips[0] ? state.trips[0].tripId : 'trip_cartagena';
-      await apiChannel1('/reservations', 'POST', {
-        tripId,
-        type: 'Vuelo',
-        provider: airline,
-        title: `Vuelo ${code} ${orig} — ${dest} (${dep} a ${arr})`,
-        date,
-        priceCop: total,
-        passengers: pax,
-        status: 'Simulada',
-      });
-      await refreshAllBusinessData();
-      showToast(`Reserva del vuelo ${code} (${airline}) registrada.`);
-      switchView('reservations', 'Reservas');
+    function openFlightBookingModal(airline, code, orig, dest, date, total, pax, dep, arr) {
+      document.getElementById('frm-airline').value = airline;
+      document.getElementById('frm-flightno').value = code;
+      document.getElementById('frm-orig').value = orig;
+      document.getElementById('frm-dest').value = dest;
+      document.getElementById('frm-date').value = date;
+      document.getElementById('frm-total').value = total;
+      document.getElementById('frm-pax').value = pax;
+      document.getElementById('frm-dep').value = dep;
+      document.getElementById('frm-arr').value = arr;
+
+      document.getElementById('frm-flight-summary').innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="color:var(--ink-900); font-size:0.95rem;">${airline} · ${code}</strong>
+          <span class="num" style="font-weight:700; color:var(--accent); font-size:1.05rem;">${formatCop(total)}</span>
+        </div>
+        <div style="font-size:0.8rem; color:var(--ink-700); margin-top:4px;">
+          Ruta: <strong>${orig} → ${dest}</strong> · Fecha: <span class="num">${date}</span> · Horario: ${dep} a ${arr} · ${pax} pasajero(s)
+        </div>
+      `;
+
+      // Sugerencia de viaje y presupuesto proporcional
+      document.getElementById('frm-new-title').value = `Viaje de ${orig} a ${dest}`;
+      const suggestedBudget = Math.max(Math.round(total * 2.2 / 50000) * 50000, 2500000);
+      document.getElementById('frm-new-budget').value = suggestedBudget;
+      document.getElementById('frm-new-pax').value = pax;
+      document.getElementById('frm-new-start').value = date;
+      try {
+        const d = new Date(date + 'T12:00:00Z');
+        d.setDate(d.getDate() + 3);
+        document.getElementById('frm-new-end').value = d.toISOString().split('T')[0];
+      } catch (e) {
+        document.getElementById('frm-new-end').value = date;
+      }
+
+      // Poblar select de viajes existentes si hay alguno
+      const exSel = document.getElementById('frm-existing-select');
+      if (state.trips && state.trips.length > 0) {
+        exSel.innerHTML = state.trips.map(t => `<option value="${t.tripId}">${t.title} (${t.origin} → ${t.destination}) · ${formatCop(t.budgetCop)}</option>`).join('');
+      } else {
+        exSel.innerHTML = `<option value="">No hay viajes existentes (se creará uno nuevo)</option>`;
+      }
+
+      // Si coincide el destino con algún viaje existente, preseleccionarlo
+      const match = (state.trips || []).find(t => (t.destination || '').toLowerCase() === dest.toLowerCase());
+      if (match) {
+        document.getElementById('frm-mode-existing').checked = true;
+        exSel.value = match.tripId;
+      } else {
+        document.getElementById('frm-mode-new').checked = true;
+      }
+
+      toggleFrmTripMode();
+      document.getElementById('flight-reserve-modal').classList.add('open');
+    }
+
+    function closeFlightBookingModal() {
+      document.getElementById('flight-reserve-modal').classList.remove('open');
+    }
+
+    function toggleFrmTripMode() {
+      const isNew = document.getElementById('frm-mode-new').checked;
+      document.getElementById('frm-new-trip-fields').style.display = isNew ? 'block' : 'none';
+      document.getElementById('frm-existing-trip-fields').style.display = isNew ? 'none' : 'block';
+    }
+
+    async function submitFlightBookingModal() {
+      const btn = document.getElementById('btn-save-flight-res');
+      btn.disabled = true;
+      btn.textContent = 'Guardando en AWS DynamoDB...';
+
+      try {
+        const isNew = document.getElementById('frm-mode-new').checked;
+        const airline = document.getElementById('frm-airline').value;
+        const code = document.getElementById('frm-flightno').value;
+        const orig = document.getElementById('frm-orig').value;
+        const dest = document.getElementById('frm-dest').value;
+        const date = document.getElementById('frm-date').value;
+        const total = Number(document.getElementById('frm-total').value || 0);
+        const pax = Number(document.getElementById('frm-pax').value || 1);
+        const dep = document.getElementById('frm-dep').value;
+        const arr = document.getElementById('frm-arr').value;
+        const status = document.getElementById('frm-res-status').value;
+
+        let targetTripId = '';
+
+        if (isNew || !state.trips.length) {
+          const title = document.getElementById('frm-new-title').value.trim() || `Viaje de ${orig} a ${dest}`;
+          const budget = Number(document.getElementById('frm-new-budget').value || (total * 2));
+          const sDate = document.getElementById('frm-new-start').value || date;
+          const eDate = document.getElementById('frm-new-end').value || sDate;
+          const tripPax = Number(document.getElementById('frm-new-pax').value || pax);
+
+          const tripResp = await apiChannel1('/trips', 'POST', {
+            title,
+            origin: orig,
+            destination: dest,
+            startDate: sDate,
+            endDate: eDate,
+            travelers: tripPax,
+            budgetCop: budget,
+            status: 'Confirmado',
+            notes: `Creado al reservar vuelo ${code} (${airline})`,
+          });
+
+          if (tripResp && tripResp.trip && tripResp.trip.tripId) {
+            targetTripId = tripResp.trip.tripId;
+          } else {
+            throw new Error(tripResp?.error || 'No se pudo crear el viaje en DynamoDB');
+          }
+        } else {
+          targetTripId = document.getElementById('frm-existing-select').value || (state.trips[0] ? state.trips[0].tripId : '');
+          if (!targetTripId) {
+            throw new Error('Debes seleccionar un viaje existente o crear uno nuevo.');
+          }
+        }
+
+        const resPayload = {
+          tripId: targetTripId,
+          type: 'Vuelo',
+          provider: airline,
+          title: `Vuelo ${code} ${orig} — ${dest} (${dep} a ${arr})`,
+          date,
+          priceCop: total,
+          passengers: pax,
+          status,
+          details: { flightNumber: code, airline, route: `${orig}-${dest}`, departureTime: dep, arrivalTime: arr },
+        };
+
+        const resResp = await apiChannel1('/reservations', 'POST', resPayload);
+        if (!resResp || !resResp.success) {
+          throw new Error(resResp?.error || 'No se pudo registrar la reserva');
+        }
+
+        closeFlightBookingModal();
+        await refreshAllBusinessData();
+        showToast(`Reserva ${status} registrada exitosamente en AWS DynamoDB.`);
+
+        switchView('trips', 'Mis Viajes e Itinerarios');
+        selectTripForBudgetComparison(targetTripId);
+      } catch (err) {
+        console.error('Error registrando reserva:', err);
+        showToast('Error al guardar: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar Reserva y Viaje en AWS';
+      }
     }
 
     function askAgentForFlights() {
@@ -2459,41 +2545,79 @@
         document.getElementById('trip-form-title').textContent = 'Editar Viaje';
         document.getElementById('tf-id').value = trip.tripId;
         document.getElementById('tf-title').value = trip.title || '';
-        document.getElementById('tf-origin').value = trip.origin || 'Bogotá';
-        document.getElementById('tf-dest').value = trip.destination || 'Cartagena';
-        document.getElementById('tf-start').value = trip.startDate || '2026-11-20';
-        document.getElementById('tf-end').value = trip.endDate || '2026-11-23';
-        document.getElementById('tf-travelers').value = trip.travelers || 3;
-        document.getElementById('tf-budget').value = trip.budgetCop || 5000000;
+        document.getElementById('tf-origin').value = trip.origin || '';
+        document.getElementById('tf-dest').value = trip.destination || '';
+        document.getElementById('tf-start').value = trip.startDate || '';
+        document.getElementById('tf-end').value = trip.endDate || '';
+        document.getElementById('tf-travelers').value = trip.travelers || 2;
+        document.getElementById('tf-budget').value = trip.budgetCop || '';
         document.getElementById('tf-status').value = trip.status || 'Planificado';
       } else {
-        document.getElementById('trip-form-title').textContent = 'Registrar Nuevo Viaje';
+        document.getElementById('trip-form-title').textContent = 'Registrar Nuevo Viaje Personalizado';
         document.getElementById('tf-id').value = '';
+        document.getElementById('tf-title').value = '';
+        document.getElementById('tf-origin').value = '';
+        document.getElementById('tf-dest').value = '';
+        const today = new Date().toISOString().split('T')[0];
+        const retDate = new Date(Date.now() + 4 * 86400000).toISOString().split('T')[0];
+        document.getElementById('tf-start').value = today;
+        document.getElementById('tf-end').value = retDate;
+        document.getElementById('tf-travelers').value = 2;
+        document.getElementById('tf-budget').value = '';
+        document.getElementById('tf-status').value = 'Planificado';
       }
+      if (show) card.scrollIntoView({ behavior: 'smooth' });
     }
 
     async function submitTripForm() {
       const id = document.getElementById('tf-id').value;
-      const payload = {
-        title: document.getElementById('tf-title').value || 'Vacaciones en Cartagena',
-        origin: document.getElementById('tf-origin').value,
-        destination: document.getElementById('tf-dest').value,
-        startDate: document.getElementById('tf-start').value,
-        endDate: document.getElementById('tf-end').value,
-        travelers: Number(document.getElementById('tf-travelers').value || 1),
-        budgetCop: Number(document.getElementById('tf-budget').value || 0),
-        status: document.getElementById('tf-status').value,
-      };
-      if (id) {
-        payload.tripId = id;
-        await apiChannel1('/trips/' + id, 'PUT', payload);
-        showToast('Viaje actualizado correctamente.');
-      } else {
-        await apiChannel1('/trips', 'POST', payload);
-        showToast('Nuevo viaje registrado.');
+      const origin = document.getElementById('tf-origin').value.trim();
+      const dest = document.getElementById('tf-dest').value.trim();
+      if (!origin || !dest) {
+        showToast('Por favor ingresa la ciudad de origen y la de destino.');
+        return;
       }
-      toggleNewTripForm(false);
-      await refreshAllBusinessData();
+
+      const title = document.getElementById('tf-title').value.trim() || `Viaje de ${origin} a ${dest}`;
+      const budget = Number(document.getElementById('tf-budget').value || 3000000);
+      const sDate = document.getElementById('tf-start').value;
+      const eDate = document.getElementById('tf-end').value || sDate;
+      const tvs = Number(document.getElementById('tf-travelers').value || 1);
+      const st = document.getElementById('tf-status').value;
+
+      const btn = document.getElementById('btn-save-trip');
+      if (btn) { btn.disabled = true; btn.textContent = 'Guardando en DynamoDB...'; }
+
+      try {
+        const payload = {
+          title,
+          origin,
+          destination: dest,
+          startDate: sDate,
+          endDate: eDate,
+          travelers: tvs,
+          budgetCop: budget,
+          status: st,
+        };
+
+        if (id) {
+          payload.tripId = id;
+          await apiChannel1('/trips/' + id, 'PUT', payload);
+          showToast(`Viaje '${title}' actualizado correctamente en AWS.`);
+        } else {
+          const resp = await apiChannel1('/trips', 'POST', payload);
+          showToast(`Viaje '${title}' guardado exitosamente en Amazon DynamoDB.`);
+          if (resp && resp.trip && resp.trip.tripId) {
+            selectTripForBudgetComparison(resp.trip.tripId);
+          }
+        }
+        toggleNewTripForm(false);
+        await refreshAllBusinessData();
+      } catch (err) {
+        showToast('Error guardando viaje: ' + err.message);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Guardar Viaje en AWS'; }
+      }
     }
 
     function editTripById(tripId) {
@@ -2504,13 +2628,13 @@
     async function generateDefaultItineraryForTrip(tripId, destination) {
       const days = [
         { dayNumber: 1, title: `Llegada a ${destination} y Centro Histórico`, activities: [{ time: '10:00', activity: 'Check-in y recorrido por el Centro Histórico', costCop: 180000 }, { time: '19:30', activity: 'Cena de bienvenida', costCop: 280000 }] },
-        { dayNumber: 2, title: 'Excursión Marítima e Islas', activities: [{ time: '08:00', activity: 'Pasadía en lancha con snorkel y almuerzo isleño', costCop: 750000 }] },
-        { dayNumber: 3, title: 'Recorrido Cultural y Miradores', activities: [{ time: '09:30', activity: 'Visita guiada a fortalezas históricas', costCop: 260000 }] },
-        { dayNumber: 4, title: 'Gastronomía Local y Regreso', activities: [{ time: '10:00', activity: 'Compras artesanales y traslado al aeropuerto', costCop: 250000 }] },
+        { dayNumber: 2, title: 'Excursión y Atractivos Principales', activities: [{ time: '08:00', activity: 'Pasadía y tour guiado con almuerzo típico', costCop: 750000 }] },
+        { dayNumber: 3, title: 'Recorrido Cultural y Panorámico', activities: [{ time: '09:30', activity: 'Visita guiada a miradores y monumentos', costCop: 260000 }] },
+        { dayNumber: 4, title: 'Gastronomía Local y Regreso', activities: [{ time: '10:00', activity: 'Compras artesanales y traslado de regreso', costCop: 250000 }] },
       ];
       await apiChannel1('/itineraries', 'POST', { tripId, destination, summary: `Itinerario de 4 días en ${destination}`, days });
       await refreshAllBusinessData();
-      showToast('Itinerario de 4 días generado.');
+      showToast('Itinerario de 4 días generado en AWS.');
     }
 
     function openActivityModal(tripId, itineraryId) {
@@ -2544,7 +2668,7 @@
       await apiChannel1('/itineraries/' + itinId, 'PUT', { itineraryId: itinId, tripId, days });
       closeActivityModal();
       await refreshAllBusinessData();
-      showToast('Actividad agregada al itinerario.');
+      showToast('Actividad agregada al itinerario en DynamoDB.');
     }
 
     function toggleBudgetComparatorPanel() {
@@ -2557,16 +2681,20 @@
       const sel = document.getElementById('bc-trip-select');
       const resultBox = document.getElementById('budget-comparison-result');
       if (!state.trips.length) {
-        sel.innerHTML = `<option value="">Sin viajes registrados</option>`;
-        resultBox.innerHTML = `<div style="font-size:0.82rem; color:var(--ink-500);">Crea o carga un viaje primero para ejecutar el comparador de presupuestos.</div>`;
+        if (sel) sel.innerHTML = `<option value="">Sin viajes registrados</option>`;
+        if (resultBox) resultBox.innerHTML = `<div style="font-size:0.82rem; color:var(--ink-500);">Crea o carga un viaje primero para ejecutar el comparador de presupuestos.</div>`;
         return;
       }
 
-      const currentVal = tripIdOverride || sel.value || state.trips[0].tripId;
-      sel.innerHTML = state.trips.map(t => `<option value="${t.tripId}" ${t.tripId === currentVal ? 'selected' : ''}>${t.title} (${formatCop(t.budgetCop)})</option>`).join('');
+      const currentVal = tripIdOverride || (sel ? sel.value : null) || state.trips[0].tripId;
+      if (sel && sel.value !== currentVal) {
+        sel.value = currentVal;
+      }
 
-      const simHotel = Number(document.getElementById('bc-sim-hotel').value || 0);
-      const simFlight = Number(document.getElementById('bc-sim-flight').value || 0);
+      const simHotel = Number(document.getElementById('bc-sim-hotel')?.value || 0);
+      const simFlight = Number(document.getElementById('bc-sim-flight')?.value || 0);
+
+      resultBox.innerHTML = `<div style="font-size:0.82rem; color:var(--ink-500); padding:12px 0;">Calculando balance financiero en Amazon DynamoDB para <strong>${currentVal}</strong>...</div>`;
 
       const res = await apiChannel1('/budget-comparison', 'POST', {
         tripId: currentVal,
@@ -2577,37 +2705,64 @@
       if (res && res.comparison) {
         resultBox.innerHTML = buildBudgetComparisonWidgetHtml(res.comparison);
       } else {
-        resultBox.innerHTML = `<div style="font-size:0.82rem; color:var(--ink-500);">No se pudo calcular la comparación de presupuesto.</div>`;
+        resultBox.innerHTML = `<div style="font-size:0.82rem; color:var(--ink-500);">No se pudo calcular la comparación de presupuesto (${res?.error || 'error en API'}).</div>`;
       }
     }
 
     function selectTripForBudgetComparison(tripId) {
-      document.getElementById('budget-comparator-card').style.display = 'block';
+      const card = document.getElementById('budget-comparator-card');
+      if (card) card.style.display = 'block';
+      const sel = document.getElementById('bc-trip-select');
+      if (sel) sel.value = tripId;
       runBudgetComparison(tripId);
-      document.getElementById('budget-comparator-card').scrollIntoView({ behavior: 'smooth' });
+      if (card) card.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function openAddReservationForTrip(tripId) {
+      switchView('reservations', 'Gestión de Reservas');
+      toggleReservationForm(true);
+      const sel = document.getElementById('rf-trip');
+      if (sel) sel.value = tripId;
     }
 
     function askAgentToCompareBudget() {
       const sel = document.getElementById('bc-trip-select');
       const tripId = (sel && sel.value) ? sel.value : (state.trips[0] ? state.trips[0].tripId : '');
-      const simHotel = Number(document.getElementById('bc-sim-hotel').value || 0);
-      const simFlight = Number(document.getElementById('bc-sim-flight').value || 0);
+      const simHotel = Number(document.getElementById('bc-sim-hotel')?.value || 0);
+      const simFlight = Number(document.getElementById('bc-sim-flight')?.value || 0);
       switchView('chat', 'Asistente de Viajes');
       sendPresetPrompt(`Ejecuta la herramienta CompareBudget para el viaje ${tripId || 'actual'}${simHotel ? ' considerando un costo estimado de hotel de ' + simHotel + ' COP' : ''}${simFlight ? ' y vuelo adicional de ' + simFlight + ' COP' : ''}, explícanos el desglose financiero y devuelve el bloque budget-json para visualizarlo.`);
     }
 
     function renderTripsModule() {
-      runBudgetComparison();
       const container = document.getElementById('trips-list-container');
       if (!state.trips.length) {
         container.innerHTML = `
           <div class="surface-card" style="text-align:center; padding:40px;">
             <h3 style="font-size:1rem; margin-bottom:6px;">Sin viajes registrados</h3>
-            <p style="font-size:0.84rem; color:var(--ink-500); margin-bottom:16px;">Carga el viaje demostrativo de 4 días a Cartagena o crea uno nuevo.</p>
-            <button class="btn btn-primary" onclick="seedMandatoryScenarioToDynamoDB()">Cargar Viaje Cartagena (4 Días · $5.000.000 COP)</button>
+            <p style="font-size:0.84rem; color:var(--ink-500); margin-bottom:16px;">Crea cualquier viaje a la ciudad que desees o carga el viaje demostrativo.</p>
+            <div style="display:flex; justify-content:center; gap:10px;">
+              <button class="btn btn-primary" onclick="toggleNewTripForm(true)">+ Crear Mi Primer Viaje</button>
+              <button class="btn btn-outline" onclick="seedMandatoryScenarioToDynamoDB()">Cargar Caso Demostrativo</button>
+            </div>
           </div>`;
         return;
       }
+
+      // Actualizar select del comparador de presupuestos con todos los viajes dinámicos
+      const sel = document.getElementById('bc-trip-select');
+      const currentSelected = sel ? sel.value : null;
+      const targetTripId = (currentSelected && state.trips.some(t => t.tripId === currentSelected))
+        ? currentSelected
+        : state.trips[0].tripId;
+
+      if (sel) {
+        sel.innerHTML = state.trips.map(t =>
+          `<option value="${t.tripId}" ${t.tripId === targetTripId ? 'selected' : ''}>${t.title} (${t.origin} → ${t.destination}) · ${formatCop(t.budgetCop)}</option>`
+        ).join('');
+      }
+
+      runBudgetComparison(targetTripId);
 
       container.innerHTML = state.trips.map(t => {
         const itin = (t.itineraries || [])[0];
@@ -2615,14 +2770,66 @@
         if (itin && itin.days) {
           itin.days.forEach(d => (d.activities || []).forEach(a => { actTotal += Number(a.costCop || 0); }));
         }
-        const resTotal = state.reservations
-          .filter(r => r.tripId === t.tripId)
-          .reduce((acc, r) => acc + Number(r.priceCop || 0), 0);
+
+        // Reservas asociadas exclusivamente a este viaje
+        const tripReservations = state.reservations.filter(r => r.tripId === t.tripId);
+        const resTotal = tripReservations.reduce((acc, r) => acc + Number(r.priceCop || 0), 0);
         const usedCop = actTotal + resTotal;
         const pct = t.budgetCop ? Math.min(100, Math.round((usedCop / t.budgetCop) * 100)) : 0;
 
+        // Renderizado de las reservas vinculadas
+        let resListHtml = '';
+        if (tripReservations.length > 0) {
+          resListHtml = `
+            <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="font-size:0.85rem; font-weight:700; color:var(--ink-900);">
+                  <i data-lucide="ticket" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>
+                  Reservas Vinculadas a este Viaje (${tripReservations.length})
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="openAddReservationForTrip('${t.tripId}')">
+                  + Agregar Otra Reserva
+                </button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                ${tripReservations.map(r => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-app); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; flex-wrap:wrap; gap:8px;">
+                    <div>
+                      <div style="font-weight:600; font-size:0.86rem; color:var(--ink-900);">
+                        ${r.title}
+                      </div>
+                      <div style="font-size:0.75rem; color:var(--ink-500); margin-top:2px;">
+                        ${r.type || 'Servicio'} · Proveedor: <strong>${r.provider}</strong> · Fecha: <span class="num">${r.date}</span> · Ref: <code>${r.referenceCode || r.reservationId}</code>
+                      </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                      <span class="num" style="font-weight:700; font-size:0.95rem; color:var(--ink-900);">${formatCop(r.priceCop)}</span>
+                      <span class="pill pill-${r.status}">${r.status}</span>
+                      <div style="display:inline-flex; gap:4px;">
+                        ${r.status !== 'Confirmada' ? `<button class="btn btn-primary btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="updateReservationStatus('${r.reservationId}', 'Confirmada')">Confirmar</button>` : ''}
+                        ${r.status !== 'Simulada' ? `<button class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="updateReservationStatus('${r.reservationId}', 'Simulada')">Simulada</button>` : ''}
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else {
+          resListHtml = `
+            <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <span style="font-size:0.8rem; color:var(--ink-500);">
+                No hay reservas vinculadas a este viaje todavía (puedes buscar vuelos o añadir tiquetes).
+              </span>
+              <button class="btn btn-outline btn-sm" onclick="openAddReservationForTrip('${t.tripId}')">
+                + Vincular Reserva
+              </button>
+            </div>
+          `;
+        }
+
         const daysGrid = (itin && (itin.days || []).length)
-          ? `<div class="itinerary-columns">
+          ? `<div class="itinerary-columns" style="margin-top:14px;">
               ${itin.days.map(d => `
                 <div class="day-card">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -2642,10 +2849,10 @@
                 </div>
               `).join('')}
             </div>`
-          : `<div style="padding:20px 24px; color:var(--ink-500); font-size:0.84rem;">Este viaje aún no cuenta con itinerario por días.</div>`;
+          : `<div style="padding:14px 0; color:var(--ink-500); font-size:0.84rem;">Este viaje aún no cuenta con itinerario por días.</div>`;
 
         return `
-          <div class="trip-panel">
+          <div class="trip-panel" style="margin-bottom:28px;">
             <div class="trip-panel-head">
               <div>
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
@@ -2654,7 +2861,7 @@
                 </div>
                 <h3 class="serif" style="font-size:1.35rem; font-weight:600;">${t.title}</h3>
                 <div style="font-size:0.83rem; color:var(--ink-700); margin-top:4px;">
-                  ${t.origin} → ${t.destination} · <span class="num">${t.startDate}</span> al <span class="num">${t.endDate}</span> · ${t.travelers} viajeros
+                  <strong>${t.origin} → ${t.destination}</strong> · <span class="num">${t.startDate}</span> al <span class="num">${t.endDate}</span> · ${t.travelers} viajeros
                 </div>
               </div>
 
@@ -2664,24 +2871,32 @@
                   <strong class="num">${formatCop(t.budgetCop)}</strong>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--ink-500); margin-top:2px;">
-                  <span>Ejecutado:</span>
+                  <span>Comprometido / Ejecutado:</span>
                   <span class="num">${formatCop(usedCop)} (${pct}%)</span>
                 </div>
                 <div class="budget-bar"><div class="budget-bar-fill" style="width:${pct}%"></div></div>
                 <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end; flex-wrap:wrap;">
-                  <button class="btn btn-outline btn-sm" onclick="selectTripForBudgetComparison('${t.tripId}')">Comparar Presupuesto</button>
-                  <button class="btn btn-outline btn-sm" onclick="editTripById('${t.tripId}')">Editar Viaje</button>
+                  <button class="btn btn-primary btn-sm" onclick="selectTripForBudgetComparison('${t.tripId}')">
+                    <i data-lucide="pie-chart"></i> Comparar Presupuesto
+                  </button>
+                  <button class="btn btn-outline btn-sm" onclick="editTripById('${t.tripId}')">Editar</button>
                   ${itin
-                    ? `<button class="btn btn-primary btn-sm" onclick="openActivityModal('${t.tripId}', '${itin.itineraryId}')">+ Agregar Actividad</button>`
-                    : `<button class="btn btn-primary btn-sm" onclick="generateDefaultItineraryForTrip('${t.tripId}', '${t.destination}')">Crear Itinerario 4 Días</button>`
+                    ? `<button class="btn btn-outline btn-sm" onclick="openActivityModal('${t.tripId}', '${itin.itineraryId}')">+ Agregar Actividad</button>`
+                    : `<button class="btn btn-outline btn-sm" onclick="generateDefaultItineraryForTrip('${t.tripId}', '${t.destination}')">Generar Itinerario</button>`
                   }
                 </div>
               </div>
             </div>
+
+            <!-- Reservas asociadas al viaje -->
+            ${resListHtml}
+
+            <!-- Itinerario día a día -->
             ${daysGrid}
           </div>
         `;
       }).join('');
+      refreshIcons();
     }
 
     // =========================================================================
@@ -2693,17 +2908,29 @@
       if (show) {
         const sel = document.getElementById('rf-trip');
         sel.innerHTML = state.trips.length
-          ? state.trips.map(t => `<option value="${t.tripId}">${t.title} (${t.tripId})</option>`).join('')
-          : `<option value="trip_cartagena">Viaje a Cartagena (trip_cartagena)</option>`;
+          ? state.trips.map(t => `<option value="${t.tripId}">${t.title} (${t.origin} → ${t.destination}) [${t.tripId}]</option>`).join('')
+          : `<option value="">Sin viajes registrados (crea uno primero)</option>`;
+        document.getElementById('rf-provider').value = '';
+        document.getElementById('rf-title').value = '';
+        document.getElementById('rf-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('rf-price').value = '';
+        document.getElementById('rf-pax').value = 2;
+        document.getElementById('rf-status').value = 'Simulada';
+        card.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
     async function submitReservationForm() {
+      const tripId = document.getElementById('rf-trip').value;
+      if (!tripId) {
+        showToast('Debes seleccionar un viaje al que asociar la reserva.');
+        return;
+      }
       const payload = {
-        tripId: document.getElementById('rf-trip').value,
+        tripId,
         type: document.getElementById('rf-type').value,
-        provider: document.getElementById('rf-provider').value,
-        title: document.getElementById('rf-title').value,
+        provider: document.getElementById('rf-provider').value || 'Proveedor',
+        title: document.getElementById('rf-title').value || 'Reserva Turística',
         date: document.getElementById('rf-date').value,
         priceCop: Number(document.getElementById('rf-price').value || 0),
         passengers: Number(document.getElementById('rf-pax').value || 1),
@@ -2712,13 +2939,13 @@
       await apiChannel1('/reservations', 'POST', payload);
       toggleReservationForm(false);
       await refreshAllBusinessData();
-      showToast('Reserva registrada.');
+      showToast('Reserva registrada exitosamente en AWS DynamoDB.');
     }
 
     async function updateReservationStatus(reservationId, newStatus) {
       await apiChannel1('/reservations/' + reservationId, 'PUT', { reservationId, status: newStatus });
       await refreshAllBusinessData();
-      showToast('Estado de reserva actualizado a ' + newStatus + '.');
+      showToast('Estado de reserva actualizado a ' + newStatus + ' en DynamoDB.');
     }
 
     function renderReservationsModule() {
