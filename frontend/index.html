@@ -993,6 +993,9 @@
           <code id="ui-session-id">sess_01</code>
         </div>
       </div>
+      <button class="btn btn-outline btn-sm" onclick="openUserModal()" style="width:100%; margin-top:8px; font-size:0.75rem; padding:6px 10px; justify-content:center;">
+        <i data-lucide="user"></i> Cambiar Viajero
+      </button>
     </div>
   </aside>
 
@@ -1017,8 +1020,11 @@
           <span class="dot" id="ch2-dot"></span>
           <span id="ch2-label">AgentCore</span>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="rotateSession()">
-          <i data-lucide="rotate-cw"></i> Nueva Sesión
+        <button class="btn btn-primary btn-sm" onclick="openUserModal()" title="Cambiar identidad de usuario (actorId en DynamoDB)">
+          <i data-lucide="user"></i> Cambiar Usuario
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="rotateSession()" title="Reinicia el hilo conversacional del chat sin borrar tus datos en DynamoDB">
+          <i data-lucide="rotate-cw"></i> Nueva Sesión Chat
         </button>
         <button class="btn btn-outline btn-sm" onclick="openConfigModal()">
           <i data-lucide="settings-2"></i> Conexiones
@@ -1668,6 +1674,38 @@
     </div>
   </div>
 
+  <!-- MODAL CAMBIAR USUARIO (CONTROL DE ACCESO Y AISLAMIENTO EN DYNAMODB) -->
+  <div class="modal-backdrop" id="user-modal">
+    <div class="modal-dialog" style="max-width:480px;">
+      <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:4px;">Gestión de Usuario y Aislamiento de Datos</h3>
+      <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:14px;">En Amazon DynamoDB, los viajes y reservas pertenecen al identificador del viajero (<code>actorId / userId</code>). Cada usuario solo lee y modifica sus propios datos.</p>
+      
+      <div style="background:var(--bg-subtle); padding:12px; border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:14px; font-size:0.82rem;">
+        <div>Usuario activo: <strong id="um-current-user">viajero_colombia_01</strong></div>
+        <div style="color:var(--ink-500); font-size:0.75rem; margin-top:2px;">Al cambiar a un usuario diferente, la pantalla se limpiará y solo verás los viajes registrados por ese usuario en DynamoDB.</div>
+      </div>
+
+      <div class="field" style="margin-bottom:12px;">
+        <label>Seleccionar Usuario Frecuente o Nuevo</label>
+        <select class="input" id="um-select-preset" onchange="onUserPresetChange()">
+          <option value="viajero_colombia_01">viajero_colombia_01 (Viajero Principal · Cartagena y Medellín)</option>
+          <option value="viajero_02">viajero_02 (Usuario Alternativo · Limpio sin viajes)</option>
+          <option value="custom">Otro usuario personalizado...</option>
+        </select>
+      </div>
+
+      <div class="field" id="um-custom-field" style="display:none; margin-bottom:18px;">
+        <label>Identificador de Usuario Personalizado (actorId)</label>
+        <input class="input num" id="um-custom-input" placeholder="ej. juan_perez, viajero_cali">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="submitUserSwitch()">Cambiar de Usuario</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -1721,12 +1759,90 @@
       document.getElementById('ch2-label').textContent = 'AgentCore (' + agentStreamUrl.replace('http://', '').replace('/invocations', '') + ')';
     }
 
+    function openUserModal() {
+      document.getElementById('um-current-user').textContent = actorId;
+      const sel = document.getElementById('um-select-preset');
+      if (actorId === 'viajero_colombia_01' || actorId === 'viajero_02') {
+        sel.value = actorId;
+        document.getElementById('um-custom-field').style.display = 'none';
+      } else {
+        sel.value = 'custom';
+        document.getElementById('um-custom-field').style.display = 'block';
+        document.getElementById('um-custom-input').value = actorId;
+      }
+      document.getElementById('user-modal').classList.add('open');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').classList.remove('open');
+    }
+
+    function onUserPresetChange() {
+      const isCustom = document.getElementById('um-select-preset').value === 'custom';
+      document.getElementById('um-custom-field').style.display = isCustom ? 'block' : 'none';
+    }
+
+    async function submitUserSwitch() {
+      const sel = document.getElementById('um-select-preset').value;
+      let newUserId = sel;
+      if (sel === 'custom') {
+        newUserId = document.getElementById('um-custom-input').value.trim();
+        if (!newUserId) {
+          showToast('Ingresa un identificador de usuario válido.');
+          return;
+        }
+      }
+
+      actorId = newUserId;
+      localStorage.setItem('trip_planner_actor_id', actorId);
+
+      // Rotar también sesión conversacional para aislamiento completo
+      sessionId = 'sess_' + Math.random().toString(36).substring(2, 8);
+      sessionStorage.setItem('trip_planner_session_id', sessionId);
+
+      // Reiniciar chat para el nuevo usuario
+      const chatCont = document.getElementById('chat-container');
+      if (chatCont) {
+        chatCont.innerHTML = `
+          <div class="chat-msg agent">
+            <div class="chat-avatar">AI</div>
+            <div class="chat-bubble">
+              ¡Bienvenido! Has iniciado sesión como <strong>${actorId}</strong> en AWS DynamoDB.<br>
+              Tus viajes y reservas están completamente aislados del resto de usuarios. ¿Qué destino te gustaría explorar hoy?
+            </div>
+          </div>
+        `;
+      }
+
+      updateIdentityLabels();
+      closeUserModal();
+
+      state.trips = [];
+      state.reservations = [];
+      await refreshAllBusinessData();
+
+      showToast(`Usuario activo cambiado a: ${actorId}. Datos cargados desde DynamoDB.`);
+    }
+
     function rotateSession() {
       sessionId = 'sess_' + Math.random().toString(36).substring(2, 8);
       sessionStorage.setItem('trip_planner_session_id', sessionId);
       updateIdentityLabels();
-      refreshAllBusinessData();
-      showToast('Nueva sesión iniciada (' + sessionId + '). Los datos persistidos del viajero se mantienen.');
+
+      const chatCont = document.getElementById('chat-container');
+      if (chatCont) {
+        chatCont.innerHTML = `
+          <div class="chat-msg agent">
+            <div class="chat-avatar">AI</div>
+            <div class="chat-bubble">
+              ¡Nueva conversación iniciada! (ID Sesión: <code>${sessionId}</code>).<br>
+              Tus viajes y reservas del usuario <strong>${actorId}</strong> permanecen seguros en Amazon DynamoDB. ¿En qué te puedo asesorar?
+            </div>
+          </div>
+        `;
+      }
+
+      showToast('Nueva sesión de chat iniciada (' + sessionId + '). Los viajes de ' + actorId + ' se conservan.');
     }
 
     function switchView(viewName, titleText) {
@@ -2736,13 +2852,18 @@
 
     function renderTripsModule() {
       const container = document.getElementById('trips-list-container');
+      const sel = document.getElementById('bc-trip-select');
+      const resultBox = document.getElementById('budget-comparison-result');
+
       if (!state.trips.length) {
+        if (sel) sel.innerHTML = `<option value="">Sin viajes registrados para ${actorId}</option>`;
+        if (resultBox) resultBox.innerHTML = `<div style="font-size:0.82rem; color:var(--ink-500); padding:16px 0;">El usuario activo (<strong>${actorId}</strong>) no tiene viajes registrados en Amazon DynamoDB. Sus datos están completamente aislados. Crea un viaje para comenzar a comparar presupuestos.</div>`;
         container.innerHTML = `
           <div class="surface-card" style="text-align:center; padding:40px;">
             <h3 style="font-size:1rem; margin-bottom:6px;">Sin viajes registrados</h3>
-            <p style="font-size:0.84rem; color:var(--ink-500); margin-bottom:16px;">Crea cualquier viaje a la ciudad que desees o carga el viaje demostrativo.</p>
+            <p style="font-size:0.84rem; color:var(--ink-500); margin-bottom:16px;">El usuario activo (<code>${actorId}</code>) aún no tiene viajes guardados en Amazon DynamoDB. Cada usuario solo puede ver y editar sus propios viajes.</p>
             <div style="display:flex; justify-content:center; gap:10px;">
-              <button class="btn btn-primary" onclick="toggleNewTripForm(true)">+ Crear Mi Primer Viaje</button>
+              <button class="btn btn-primary" onclick="toggleNewTripForm(true)">+ Crear Viaje para ${actorId}</button>
               <button class="btn btn-outline" onclick="seedMandatoryScenarioToDynamoDB()">Cargar Caso Demostrativo</button>
             </div>
           </div>`;
