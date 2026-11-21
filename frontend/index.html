@@ -1102,7 +1102,7 @@
               <span class="pill" style="background:rgba(255,255,255,0.15); color:#ffffff; border:1px solid rgba(255,255,255,0.25);">
                 <span class="dot" style="background:#10b981;"></span> Arquitectura Multiagente AWS Serverless
               </span>
-              <span style="font-size:0.75rem; color:#94a3b8;">Usuario activo: <strong style="color:#ffffff;" id="dash-user-label">viajero_colombia_01</strong></span>
+              <span style="font-size:0.75rem; color:#94a3b8;">Usuario activo: <strong style="color:#ffffff;" id="dash-user-label">viajero.demo@tripplanner.ai</strong></span>
             </div>
             <h1 class="executive-hero-title">Centro de Gestión y Control Financiero</h1>
             <p class="executive-hero-desc">
@@ -1897,23 +1897,26 @@
       if (window.lucide) window.lucide.createIcons();
     }
 
+    function getDisplayEmail() {
+      if (cognitoUser && cognitoUser.email) return cognitoUser.email;
+      const stored = localStorage.getItem('trip_planner_user_email');
+      if (stored) return stored;
+      if (actorId === 'e4885488-f0e1-7016-7a21-bd59bdb45b72' || actorId.includes('demo')) {
+        return 'viajero.demo@tripplanner.ai';
+      }
+      if (actorId === '2468d4b8-a0a1-703d-d006-c06cf44f13ca' || actorId.includes('secundario')) {
+        return 'viajero.secundario@tripplanner.ai';
+      }
+      if (actorId && actorId.includes('@')) return actorId;
+      return 'viajero.demo@tripplanner.ai';
+    }
+
     function updateIdentityLabels() {
+      const displayEmail = getDisplayEmail();
       const actorEl = document.getElementById('ui-actor-id');
       if (actorEl) actorEl.textContent = actorId;
       const sessEl = document.getElementById('ui-session-id');
       if (sessEl) sessEl.textContent = sessionId;
-
-      // Resolver correo amigable para el usuario en lugar de mostrar el UUID/sub crudo
-      let displayEmail = 'viajero.demo@tripplanner.ai';
-      if (cognitoUser && cognitoUser.email) {
-        displayEmail = cognitoUser.email;
-      } else if (actorId === '2468d4b8-a0a1-703d-d006-c06cf44f13ca' || actorId.includes('secundario')) {
-        displayEmail = 'viajero.secundario@tripplanner.ai';
-      } else if (actorId.includes('@')) {
-        displayEmail = actorId;
-      } else if (actorId === 'viajero_02') {
-        displayEmail = 'viajero_02 (Sin Viajes)';
-      }
 
       const topLabel = document.getElementById('topbar-user-label');
       if (topLabel) topLabel.textContent = displayEmail;
@@ -2098,6 +2101,7 @@
     function applyCognitoSession(token, email) {
       cognitoIdToken = token;
       localStorage.setItem('trip_planner_cognito_token', token);
+      if (email) localStorage.setItem('trip_planner_user_email', email);
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         cognitoUser = payload;
@@ -2118,6 +2122,7 @@
       cognitoIdToken = '';
       cognitoUser = null;
       localStorage.removeItem('trip_planner_cognito_token');
+      localStorage.removeItem('trip_planner_user_email');
       actorId = 'viajero_colombia_01';
       localStorage.setItem('trip_planner_actor_id', actorId);
       updateCognitoUI();
@@ -2125,7 +2130,7 @@
       state.trips = [];
       state.reservations = [];
       refreshAllBusinessData();
-      showToast('Sesión de Cognito cerrada. Restablecido a perfil viajero_colombia_01.');
+      showToast('Sesión cerrada. Regresando a la pantalla de acceso.');
     }
 
     function updateCognitoUI() {
@@ -2314,7 +2319,7 @@
     // =========================================================================
     function renderDashboard() {
       const userLbl = document.getElementById('dash-user-label');
-      if (userLbl) userLbl.textContent = actorId;
+      if (userLbl) userLbl.textContent = getDisplayEmail();
 
       document.getElementById('kpi-trips').textContent = state.trips.length;
       const budgetSum = state.trips.reduce((acc, t) => acc + Number(t.budgetCop || 0), 0);
