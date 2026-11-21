@@ -918,17 +918,6 @@
         <p style="font-size:0.83rem; color:#64748b;">Plataforma de Planificación Multiagente y Gestión de Viajes</p>
       </div>
 
-      <!-- Security Trust Badge -->
-      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; margin-bottom:20px; font-size:0.77rem; color:#166534; display:flex; align-items:flex-start; gap:8px;">
-        <i data-lucide="shield-check" style="width:18px; height:18px; flex-shrink:0; color:#16a34a; margin-top:1px;"></i>
-        <div>
-          <strong>Autenticación Criptográfica con Amazon Cognito</strong>
-          <div style="color:#15803d; font-size:0.72rem; margin-top:2px;">
-            User Pool ID: <code>us-east-1_QsEFzUxTM</code> · Tokens JWT verificados en API Gateway y DynamoDB.
-          </div>
-        </div>
-      </div>
-
       <!-- Tabs: Iniciar Sesión / Registrarse -->
       <div style="display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:20px;">
         <button id="tab-login-btn" onclick="switchLoginTab('login')" style="flex:1; padding:9px 0; font-size:0.86rem; font-weight:700; background:none; border:none; border-bottom:2px solid #0f172a; color:#0f172a; cursor:pointer;">
@@ -1074,25 +1063,18 @@
       </div>
 
       <div class="topbar-right">
-        <div class="conn-pill" onclick="openConfigModal()" title="Canal 1: API Gateway REST + AWS Lambda + DynamoDB">
+        <div class="conn-pill" onclick="openConfigModal()" title="Servicios Serverless Conectados (API Gateway, Lambda, DynamoDB y Bedrock AgentCore)" style="cursor:pointer;">
           <span class="dot" id="ch1-dot"></span>
-          <span id="ch1-label">API Negocio</span>
+          <span>En Línea (AWS)</span>
         </div>
-        <div class="conn-pill" onclick="openConfigModal()" title="Canal 2: Bedrock AgentCore HTTP Streaming">
-          <span class="dot" id="ch2-dot"></span>
-          <span id="ch2-label">AgentCore</span>
-        </div>
-        <div class="conn-pill" id="topbar-auth-pill" onclick="openUserModal()" title="Identidad autenticada" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534; cursor:pointer;">
-          <span class="dot" style="background:#16a34a;"></span>
+        <div class="conn-pill" id="topbar-auth-pill" onclick="openUserModal()" title="Gestionar cuenta y viajero activo" style="cursor:pointer;">
+          <i data-lucide="user" style="width:14px; height:14px;"></i>
           <span id="topbar-user-label">viajero_colombia_01</span>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="showLoginScreen()" title="Iniciar sesión con otra cuenta o salir a la pantalla de login">
-          <i data-lucide="log-out"></i> Login / Salir
+        <button class="btn btn-outline btn-sm" onclick="showLoginScreen()" title="Cerrar sesión o cambiar de cuenta">
+          <i data-lucide="log-out"></i> Salir
         </button>
-        <button class="btn btn-outline btn-sm" onclick="rotateSession()" title="Reinicia el hilo conversacional del chat sin borrar tus datos en DynamoDB">
-          <i data-lucide="rotate-cw"></i> Nueva Sesión Chat
-        </button>
-        <button class="btn btn-outline btn-sm" onclick="openConfigModal()">
+        <button class="btn btn-outline btn-sm" onclick="openConfigModal()" title="Ver detalles de conexión">
           <i data-lucide="settings-2"></i> Conexiones
         </button>
       </div>
@@ -1778,12 +1760,9 @@
 
       <!-- Sección de Login con Cognito -->
       <div style="border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:14px; background:var(--bg-surface);">
-        <div style="font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
           <i data-lucide="shield-check" style="width:16px; height:16px; color:#0284c7;"></i>
-          Autenticación con Amazon Cognito User Pool
-        </div>
-        <div style="font-size:0.75rem; color:var(--ink-500); margin-bottom:10px;">
-          Pool ID: <code>us-east-1_QsEFzUxTM</code> · Client: <code>1dreu6im...</code>
+          Autenticación con Amazon Cognito
         </div>
         
         <div id="cognito-logged-in-view" style="display:none;">
@@ -1909,18 +1888,22 @@
     }
 
     function updateIdentityLabels() {
-      document.getElementById('ui-actor-id').textContent = actorId;
-      document.getElementById('ui-session-id').textContent = sessionId;
+      const actorEl = document.getElementById('ui-actor-id');
+      if (actorEl) actorEl.textContent = actorId;
+      const sessEl = document.getElementById('ui-session-id');
+      if (sessEl) sessEl.textContent = sessionId;
       const topLabel = document.getElementById('topbar-user-label');
       if (topLabel) {
         topLabel.textContent = (cognitoUser && (cognitoUser.email || cognitoUser['cognito:username']))
           ? (cognitoUser.email || cognitoUser['cognito:username'])
           : actorId;
       }
-      document.getElementById('ch1-label').textContent = apiGatewayUrl.includes('amazonaws.com')
-        ? (cognitoIdToken ? 'API GW + Cognito JWT' : 'API Gateway (AWS)')
-        : 'API Negocio (' + apiGatewayUrl.replace('http://', '') + ')';
-      document.getElementById('ch2-label').textContent = 'AgentCore (' + agentStreamUrl.replace('http://', '').replace('/invocations', '') + ')';
+      const dashLabel = document.getElementById('dash-user-label');
+      if (dashLabel) {
+        dashLabel.textContent = (cognitoUser && (cognitoUser.email || cognitoUser['cognito:username']))
+          ? (cognitoUser.email || cognitoUser['cognito:username'])
+          : actorId;
+      }
     }
 
     // Funciones de Control de Pantalla de Login y Amazon Cognito
