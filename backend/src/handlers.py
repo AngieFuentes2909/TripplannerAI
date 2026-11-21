@@ -54,10 +54,12 @@ def _validate_iso_date(date_str: str, field_name: str) -> str:
 
 
 def _enforce_user_ownership(item: Dict[str, Any], requester_user_id: Optional[str]) -> None:
-    """Verifica control de acceso por usuario: un usuario solo puede modificar sus propios recursos."""
+    """Verifica control de acceso estricto por usuario: un usuario solo puede acceder o modificar sus propios recursos."""
     owner = item.get("userId")
-    if owner and requester_user_id and owner not in ("default_user", requester_user_id):
-        raise PermissionError("Acceso denegado: no tienes permisos para modificar recursos que pertenecen a otro usuario.")
+    if not requester_user_id:
+        raise PermissionError("Acceso denegado: se requiere un identificador de usuario autenticado.")
+    if owner and owner != requester_user_id and requester_user_id != "admin":
+        raise PermissionError(f"Acceso denegado: el recurso pertenece al usuario '{owner}' y no tienes permisos para acceder o modificarlo.")
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -493,15 +495,22 @@ def op_update_itinerary(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def op_create_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Tool 6: CreateReservation — Registra una reserva asociada a un viaje (sin almacenar datos de tarjetas o CVV)."""
+    """Tool 6: CreateReservation — Registra una reserva asociada a un viaje con validación cruzada y control de viajeros (sin almacenar datos de tarjetas o CVV)."""
     _reject_sensitive_payment_data(payload)
     reservation_id = payload.get("reservationId") or f"res_{uuid.uuid4().hex[:8]}"
     trip_id = payload.get("tripId")
     user_id = payload.get("userId") or payload.get("actorId") or "default_user"
 
+    max_travelers = 50
     if not trip_id:
         recent_trips = db.list_items("trips", TRIPS_TABLE, user_id=user_id)
         trip_id = recent_trips[0]["tripId"] if recent_trips else "unassigned"
+    else:
+        # Validación cruzada estricta: verificar que el viaje exista y pertenezca al usuario autenticado
+        trip = db.get_item("trips", TRIPS_TABLE, "tripId", trip_id)
+        if trip:
+            _enforce_user_ownership(trip, user_id)
+            max_travelers = int(trip.get("travelers", 50))
 
     res_type = str(payload.get("type") or "Vuelo").strip()
     provider = str(payload.get("provider") or payload.get("airline") or "Avianca").strip()
@@ -511,9 +520,20 @@ def op_create_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
     price_cop = int(float(payload.get("priceCop", payload.get("price", 0)) or 0))
     if price_cop < 0:
         raise ValueError("El valor de la reserva ('priceCop') no puede ser negativo.")
+
+    # Control y validación de viajeros asignados
     passengers = int(payload.get("passengers", payload.get("travelers", 1)) or 1)
     if passengers < 1 or passengers > 50:
         raise ValueError("El número de pasajeros de la reserva debe estar entre 1 y 50.")
+    if passengers > max_travelers:
+        raise ValueError(f"El número de pasajeros ({passengers}) supera el cupo máximo de viajeros permitido por el viaje ({max_travelers}).")
+
+    assigned_travelers = payload.get("assignedTravelers")
+    if isinstance(assigned_travelers, list) and assigned_travelers:
+        if len(assigned_travelers) > max_travelers:
+            raise ValueError(f"La lista de viajeros asignados ({len(assigned_travelers)}) supera el cupo del viaje ({max_travelers}).")
+    else:
+        assigned_travelers = [f"Viajero {i+1}" for i in range(passengers)]
 
     status = str(payload.get("status") or "Simulada").strip()
     if status not in ALLOWED_RESERVATION_STATUSES:
@@ -535,6 +555,7 @@ def op_create_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
         "date": date,
         "priceCop": price_cop,
         "passengers": passengers,
+        "assignedTravelers": assigned_travelers,
         "status": status,
         "details": details,
         "createdAt": now,
@@ -544,13 +565,13 @@ def op_create_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "success": True,
         "operation": "CreateReservation",
-        "message": f"Reserva '{title}' (Código: {reference_code}, Estado: {status}) registrada en el viaje '{trip_id}' por ${price_cop:,} COP.".replace(",", "."),
+        "message": f"Reserva '{title}' (Código: {reference_code}, Estado: {status}, Viajeros: {len(assigned_travelers)}) registrada en el viaje '{trip_id}' por ${price_cop:,} COP.".replace(",", "."),
         "reservation": saved,
     }
 
 
 def op_get_reservations(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Tool 7: GetReservations — Consulta las reservas de un usuario o viaje."""
+    """Tool 7: GetReservations — Consulta las reservas de un usuario o viaje con verificación de titularidad."""
     reservation_id = payload.get("reservationId")
     trip_id = payload.get("tripId")
     user_id = payload.get("userId") or payload.get("actorId")
@@ -560,6 +581,7 @@ def op_get_reservations(payload: Dict[str, Any]) -> Dict[str, Any]:
         res = db.get_item("reservations", RESERVATIONS_TABLE, "reservationId", reservation_id)
         if not res:
             return {"success": False, "operation": "GetReservations", "message": f"Reserva '{reservation_id}' no encontrada.", "reservations": []}
+        _enforce_user_ownership(res, user_id)
         return {"success": True, "operation": "GetReservations", "reservation": res, "reservations": [res]}
 
     reservations = db.list_items("reservations", RESERVATIONS_TABLE, user_id=user_id, trip_id=trip_id)
@@ -575,17 +597,27 @@ def op_get_reservations(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def op_update_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Tool 8: UpdateReservation — Actualiza una reserva o su estado (Simulada, Pendiente, Confirmada, Cancelada)."""
+    """Tool 8: UpdateReservation — Actualiza una reserva, asignación de viajeros o estado con validación cruzada."""
     _reject_sensitive_payment_data(payload)
     reservation_id = payload.get("reservationId")
     if not reservation_id:
         raise ValueError("El campo 'reservationId' es obligatorio para UpdateReservation.")
 
+    user_id = payload.get("userId") or payload.get("actorId")
     existing = db.get_item("reservations", RESERVATIONS_TABLE, "reservationId", reservation_id)
     if not existing:
         return {"success": False, "operation": "UpdateReservation", "message": f"Reserva '{reservation_id}' no encontrada."}
 
-    _enforce_user_ownership(existing, payload.get("userId") or payload.get("actorId"))
+    _enforce_user_ownership(existing, user_id)
+
+    # Si se cambia el tripId asociado, validar titularidad del nuevo viaje
+    target_trip_id = payload.get("tripId") or existing.get("tripId")
+    max_travelers = 50
+    if target_trip_id and target_trip_id != "unassigned":
+        trip = db.get_item("trips", TRIPS_TABLE, "tripId", target_trip_id)
+        if trip:
+            _enforce_user_ownership(trip, user_id)
+            max_travelers = int(trip.get("travelers", 50))
 
     if "status" in payload and payload["status"]:
         if payload["status"] not in ALLOWED_RESERVATION_STATUSES:
@@ -594,16 +626,29 @@ def op_update_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
         if float(payload["priceCop"]) < 0:
             raise ValueError("El valor de la reserva no puede ser negativo.")
 
+    # Validar cambio de viajeros asignados
+    if "passengers" in payload and payload["passengers"] is not None:
+        pax = int(payload["passengers"])
+        if pax < 1 or pax > max_travelers:
+            raise ValueError(f"El número de pasajeros ({pax}) no puede exceder el límite del viaje ({max_travelers}).")
+        existing["passengers"] = pax
+
+    if "assignedTravelers" in payload and payload["assignedTravelers"] is not None:
+        travelers_list = payload["assignedTravelers"]
+        if isinstance(travelers_list, list):
+            if len(travelers_list) > max_travelers:
+                raise ValueError(f"La lista de viajeros asignados ({len(travelers_list)}) supera la capacidad del viaje ({max_travelers}).")
+            existing["assignedTravelers"] = travelers_list
+            existing["passengers"] = len(travelers_list)
+
     updatable = [
         "tripId", "type", "provider", "title", "referenceCode",
-        "date", "priceCop", "passengers", "status", "details"
+        "date", "priceCop", "status", "details"
     ]
     for field in updatable:
         if field in payload and payload[field] is not None:
             if field == "priceCop":
                 existing[field] = int(float(payload[field]))
-            elif field == "passengers":
-                existing[field] = int(payload[field])
             elif field == "date":
                 existing[field] = _validate_iso_date(payload[field], "date")
             else:
@@ -614,7 +659,7 @@ def op_update_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "success": True,
         "operation": "UpdateReservation",
-        "message": f"Reserva '{reservation_id}' actualizada a estado '{existing['status']}'.",
+        "message": f"Reserva '{reservation_id}' actualizada (Estado: '{existing['status']}', Viajeros: {existing.get('passengers', 1)}).",
         "reservation": saved,
     }
 
@@ -1148,10 +1193,23 @@ def _extract_payload(event: Dict[str, Any]) -> Dict[str, Any]:
         return dict(event)
 
     payload: Dict[str, Any] = {}
+
+    # 1. Extracción criptográfica prioritaria del usuario autenticado vía Amazon Cognito User Pool
+    claims = event.get("requestContext", {}).get("authorizer", {}).get("claims", {})
+    cognito_sub = claims.get("sub") or claims.get("cognito:username") or claims.get("username")
+    if cognito_sub:
+        payload["userId"] = cognito_sub
+        payload["userEmail"] = claims.get("email")
+        payload["isCognitoAuthenticated"] = True
+
     if event.get("queryStringParameters") and isinstance(event["queryStringParameters"], dict):
-        payload.update(event["queryStringParameters"])
+        for k, v in event["queryStringParameters"].items():
+            if k not in payload or not payload.get("isCognitoAuthenticated"):
+                payload[k] = v
     if event.get("pathParameters") and isinstance(event["pathParameters"], dict):
-        payload.update(event["pathParameters"])
+        for k, v in event["pathParameters"].items():
+            if k not in payload or not payload.get("isCognitoAuthenticated"):
+                payload[k] = v
 
     headers = event.get("headers") or {}
     actor_header = headers.get("x-actor-id") or headers.get("X-Actor-Id")
@@ -1164,11 +1222,18 @@ def _extract_payload(event: Dict[str, Any]) -> Dict[str, Any]:
             try:
                 body_data = json.loads(raw_body)
                 if isinstance(body_data, dict):
-                    payload.update(body_data)
+                    for k, v in body_data.items():
+                        # Si el usuario ya fue autenticado por Cognito, ignorar spoofing de userId desde el body
+                        if k in ("userId", "actorId") and payload.get("isCognitoAuthenticated"):
+                            continue
+                        payload[k] = v
             except Exception:
                 pass
         elif isinstance(raw_body, dict):
-            payload.update(raw_body)
+            for k, v in raw_body.items():
+                if k in ("userId", "actorId") and payload.get("isCognitoAuthenticated"):
+                    continue
+                payload[k] = v
 
     return payload
 

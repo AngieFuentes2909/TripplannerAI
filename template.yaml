@@ -108,7 +108,48 @@ Resources:
           KeyType: HASH
 
   # ============================================================================
-  # 2. CANAL 1: AMAZON API GATEWAY (REST API CON CORS Y THROTTLING DE SEGURIDAD)
+  # AUTENTICACIÓN: AMAZON COGNITO USER POOL & CLIENT
+  # ============================================================================
+  TripPlannerUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: TripPlanner-UserPool
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: false
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+
+  TripPlannerUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: TripPlanner-Web-Client
+      UserPoolId: !Ref TripPlannerUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+      PreventUserExistenceErrors: ENABLED
+
+  # ============================================================================
+  # 2. CANAL 1: AMAZON API GATEWAY (REST API CON CORS, THROTTLING Y COGNITO AUTHORIZER)
   # ============================================================================
   TripPlannerApi:
     Type: AWS::Serverless::Api
@@ -124,6 +165,12 @@ Resources:
         AllowMethods: "'GET,POST,PUT,PATCH,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization,X-Actor-Id,X-Session-Id'"
         AllowOrigin: "'*'"
+      Auth:
+        Authorizers:
+          CognitoAuth:
+            UserPoolArn: !GetAtt TripPlannerUserPool.Arn
+            Identity:
+              Header: Authorization
 
   # ============================================================================
   # 3. CAPA DE LÓGICA DE NEGOCIO Y TOOLS: 8 FUNCIONES AWS LAMBDA (IAM Mínimo Privilegio)
@@ -299,6 +346,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ReservationsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref TripsTable
       Events:
         UpdateReservationApi:
           Type: Api
@@ -466,3 +515,12 @@ Outputs:
   UsersTableName:
     Description: Tabla DynamoDB de Usuarios y Preferencias
     Value: !Ref UsersTable
+  UserPoolId:
+    Description: ID del User Pool de Amazon Cognito
+    Value: !Ref TripPlannerUserPool
+  UserPoolClientId:
+    Description: ID del App Client de Amazon Cognito
+    Value: !Ref TripPlannerUserPoolClient
+  UserPoolArn:
+    Description: ARN del User Pool de Amazon Cognito
+    Value: !GetAtt TripPlannerUserPool.Arn

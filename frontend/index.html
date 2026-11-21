@@ -1470,7 +1470,11 @@
             </div>
             <div class="field">
               <label>Pasajeros / Huéspedes</label>
-              <input type="number" class="input num" id="rf-pax" value="2" min="1">
+              <input type="number" class="input num" id="rf-pax" value="2" min="1" max="50">
+            </div>
+            <div class="field">
+              <label>Viajeros Asignados (Nombres separados por coma)</label>
+              <input class="input" id="rf-travelers" placeholder="Ej. Juan Pérez, María Gómez, Carlos Díaz">
             </div>
             <div class="field">
               <label>Estado</label>
@@ -1654,34 +1658,84 @@
     </div>
   </div>
 
-  <!-- MODAL CAMBIAR USUARIO (CONTROL DE ACCESO Y AISLAMIENTO EN DYNAMODB) -->
+  <!-- MODAL CAMBIAR USUARIO (CONTROL DE ACCESO Y AISLAMIENTO EN DYNAMODB + COGNITO) -->
   <div class="modal-backdrop" id="user-modal">
-    <div class="modal-dialog" style="max-width:480px;">
-      <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:4px;">Gestión de Usuario y Aislamiento de Datos</h3>
-      <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:14px;">En Amazon DynamoDB, los viajes y reservas pertenecen al identificador del viajero (<code>actorId / userId</code>). Cada usuario solo lee y modifica sus propios datos.</p>
+    <div class="modal-dialog" style="max-width:520px;">
+      <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:4px;">Gestión de Identidad y Autenticación</h3>
+      <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:14px;">Amazon Cognito User Pool proporciona la identidad real criptográfica (<code>sub</code>) para autorizar peticiones en API Gateway y DynamoDB.</p>
       
-      <div style="background:var(--bg-subtle); padding:12px; border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:14px; font-size:0.82rem;">
-        <div>Usuario activo: <strong id="um-current-user">viajero_colombia_01</strong></div>
-        <div style="color:var(--ink-500); font-size:0.75rem; margin-top:2px;">Al cambiar a un usuario diferente, la pantalla se limpiará y solo verás los viajes registrados por ese usuario en DynamoDB.</div>
+      <!-- Panel de estado Cognito -->
+      <div id="cognito-status-box" style="background:var(--bg-subtle); padding:12px; border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:14px; font-size:0.82rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>Usuario activo: <strong id="um-current-user">viajero_colombia_01</strong></div>
+          <span id="cognito-badge" class="badge" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd; font-size:0.7rem;">Sin Cognito JWT</span>
+        </div>
+        <div id="cognito-details" style="color:var(--ink-500); font-size:0.75rem; margin-top:4px;">
+          Cada usuario solo puede leer y modificar sus propios viajes y reservas en DynamoDB.
+        </div>
       </div>
 
-      <div class="field" style="margin-bottom:12px;">
-        <label>Seleccionar Usuario Frecuente o Nuevo</label>
-        <select class="input" id="um-select-preset" onchange="onUserPresetChange()">
-          <option value="viajero_colombia_01">viajero_colombia_01 (Viajero Principal · Cartagena y Medellín)</option>
-          <option value="viajero_02">viajero_02 (Usuario Alternativo · Limpio sin viajes)</option>
-          <option value="custom">Otro usuario personalizado...</option>
-        </select>
+      <!-- Sección de Login con Cognito -->
+      <div style="border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:14px; background:var(--bg-surface);">
+        <div style="font-weight:700; font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <i data-lucide="shield-check" style="width:16px; height:16px; color:#0284c7;"></i>
+          Autenticación con Amazon Cognito User Pool
+        </div>
+        <div style="font-size:0.75rem; color:var(--ink-500); margin-bottom:10px;">
+          Pool ID: <code>us-east-1_QsEFzUxTM</code> · Client: <code>1dreu6im...</code>
+        </div>
+        
+        <div id="cognito-logged-in-view" style="display:none;">
+          <div style="font-size:0.82rem; margin-bottom:10px; color:#065f46; background:#ecfdf5; padding:8px 10px; border-radius:6px; border:1px solid #a7f3d0;">
+            ✓ Sesión iniciada como: <strong id="cognito-user-email"></strong><br>
+            <span style="font-size:0.7rem; color:var(--ink-500);">Token criptográfico JWT activo en API Gateway (Canal 1).</span>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="logoutCognito()" style="width:100%;">
+            Cerrar Sesión de Cognito
+          </button>
+        </div>
+
+        <div id="cognito-login-view">
+          <button class="btn btn-primary" onclick="loginDemoCognitoUser()" style="width:100%; margin-bottom:10px; height:36px;">
+            ⚡ Iniciar Sesión Rápida Cognito (Demo Verificado)
+          </button>
+          <div style="display:flex; align-items:center; text-align:center; margin:8px 0; color:var(--ink-400); font-size:0.75rem;">
+            <span style="flex:1; border-bottom:1px solid var(--border);"></span>
+            <span style="padding:0 8px;">o ingresa credenciales</span>
+            <span style="flex:1; border-bottom:1px solid var(--border);"></span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <input class="input" id="cog-email" placeholder="email@ejemplo.com" style="font-size:0.8rem;">
+            <input class="input" id="cog-pass" type="password" placeholder="Contraseña" style="font-size:0.8rem;">
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="submitCognitoLoginManual()" style="width:100%;">
+            Iniciar Sesión con Cognito
+          </button>
+        </div>
       </div>
 
-      <div class="field" id="um-custom-field" style="display:none; margin-bottom:18px;">
-        <label>Identificador de Usuario Personalizado (actorId)</label>
-        <input class="input num" id="um-custom-input" placeholder="ej. juan_perez, viajero_cali">
-      </div>
+      <!-- Selector de usuario alternativo / viajero local para pruebas -->
+      <details style="font-size:0.8rem; margin-bottom:14px; border:1px solid var(--border); border-radius:var(--radius-md); padding:10px;">
+        <summary style="cursor:pointer; font-weight:600; color:var(--ink-600);">Cambio rápido de perfil para pruebas (actorId libre)</summary>
+        <div class="field" style="margin-top:10px; margin-bottom:8px;">
+          <label>Perfil rápido</label>
+          <select class="input" id="um-select-preset" onchange="onUserPresetChange()">
+            <option value="viajero_colombia_01">viajero_colombia_01 (Principal · Cartagena y Medellín)</option>
+            <option value="viajero_02">viajero_02 (Alternativo · Limpio sin viajes)</option>
+            <option value="custom">Otro usuario personalizado...</option>
+          </select>
+        </div>
+        <div class="field" id="um-custom-field" style="display:none; margin-bottom:8px;">
+          <label>Identificador Personalizado</label>
+          <input class="input num" id="um-custom-input" placeholder="ej. juan_perez, viajero_cali">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="submitUserSwitch()" style="width:100%; margin-top:6px;">
+          Aplicar actorId libre
+        </button>
+      </details>
 
       <div style="display:flex; justify-content:flex-end; gap:8px;">
-        <button class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="submitUserSwitch()">Cambiar de Usuario</button>
+        <button class="btn btn-outline" onclick="closeUserModal()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1690,8 +1744,31 @@
 
   <script>
     // =========================================================================
-    // ESTADO Y UTILIDADES
+    // ESTADO Y UTILIDADES (AMAZON COGNITO + DYNAMODB)
     // =========================================================================
+    const COGNITO_CONFIG = {
+      userPoolId: 'us-east-1_QsEFzUxTM',
+      clientId: '1dreu6imddnkc4k7lsg0jfk01q',
+      region: 'us-east-1'
+    };
+
+    let cognitoIdToken = localStorage.getItem('trip_planner_cognito_token') || '';
+    let cognitoUser = null;
+    try {
+      if (cognitoIdToken) {
+        const payload = JSON.parse(atob(cognitoIdToken.split('.')[1]));
+        if (payload.exp * 1000 > Date.now()) {
+          cognitoUser = payload;
+          localStorage.setItem('trip_planner_actor_id', payload.sub);
+        } else {
+          cognitoIdToken = '';
+          localStorage.removeItem('trip_planner_cognito_token');
+        }
+      }
+    } catch (e) {
+      cognitoIdToken = '';
+    }
+
     let actorId = localStorage.getItem('trip_planner_actor_id') || 'viajero_colombia_01';
     localStorage.setItem('trip_planner_actor_id', actorId);
 
@@ -1734,13 +1811,130 @@
       document.getElementById('ui-actor-id').textContent = actorId;
       document.getElementById('ui-session-id').textContent = sessionId;
       document.getElementById('ch1-label').textContent = apiGatewayUrl.includes('amazonaws.com')
-        ? 'API Gateway (AWS)'
+        ? (cognitoIdToken ? 'API GW + Cognito JWT' : 'API Gateway (AWS)')
         : 'API Negocio (' + apiGatewayUrl.replace('http://', '') + ')';
       document.getElementById('ch2-label').textContent = 'AgentCore (' + agentStreamUrl.replace('http://', '').replace('/invocations', '') + ')';
     }
 
+    // Funciones de Autenticación con Amazon Cognito User Pool
+    async function executeCognitoAuth(email, password) {
+      const endpoint = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AWSCognitoIdentityProviderService.InitiateAuth'
+        },
+        body: JSON.stringify({
+          AuthFlow: 'USER_PASSWORD_AUTH',
+          ClientId: COGNITO_CONFIG.clientId,
+          AuthParameters: {
+            USERNAME: email,
+            PASSWORD: password
+          }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.__type || 'Error en autenticación');
+      }
+      return data.AuthenticationResult;
+    }
+
+    async function loginDemoCognitoUser() {
+      try {
+        showToast('Autenticando contra Amazon Cognito User Pool...');
+        const auth = await executeCognitoAuth('viajero.demo@tripplanner.ai', 'TripPlanner2026!');
+        applyCognitoSession(auth.IdToken, 'viajero.demo@tripplanner.ai');
+        showToast('¡Sesión Cognito iniciada! Token JWT verificado en AWS.');
+      } catch (e) {
+        showToast('Error autenticando con Cognito: ' + e.message);
+      }
+    }
+
+    async function submitCognitoLoginManual() {
+      const email = document.getElementById('cog-email')?.value?.trim();
+      const pass = document.getElementById('cog-pass')?.value;
+      if (!email || !pass) {
+        showToast('Ingresa email y contraseña.');
+        return;
+      }
+      try {
+        showToast('Autenticando contra Amazon Cognito...');
+        const auth = await executeCognitoAuth(email, pass);
+        applyCognitoSession(auth.IdToken, email);
+        showToast('¡Autenticado con éxito en Amazon Cognito!');
+      } catch (e) {
+        showToast('Fallo inicio de sesión: ' + e.message);
+      }
+    }
+
+    function applyCognitoSession(token, email) {
+      cognitoIdToken = token;
+      localStorage.setItem('trip_planner_cognito_token', token);
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        cognitoUser = payload;
+        actorId = payload.sub;
+        localStorage.setItem('trip_planner_actor_id', actorId);
+      } catch (e) {}
+      updateCognitoUI();
+      updateIdentityLabels();
+      state.trips = [];
+      state.reservations = [];
+      refreshAllBusinessData();
+    }
+
+    function logoutCognito() {
+      cognitoIdToken = '';
+      cognitoUser = null;
+      localStorage.removeItem('trip_planner_cognito_token');
+      actorId = 'viajero_colombia_01';
+      localStorage.setItem('trip_planner_actor_id', actorId);
+      updateCognitoUI();
+      updateIdentityLabels();
+      state.trips = [];
+      state.reservations = [];
+      refreshAllBusinessData();
+      showToast('Sesión de Cognito cerrada. Restablecido a perfil viajero_colombia_01.');
+    }
+
+    function updateCognitoUI() {
+      const loggedView = document.getElementById('cognito-logged-in-view');
+      const loginView = document.getElementById('cognito-login-view');
+      const badge = document.getElementById('cognito-badge');
+      const details = document.getElementById('cognito-details');
+      const emailSpan = document.getElementById('cognito-user-email');
+      const curUser = document.getElementById('um-current-user');
+
+      if (curUser) curUser.textContent = actorId;
+
+      if (cognitoIdToken && cognitoUser) {
+        if (loggedView) loggedView.style.display = 'block';
+        if (loginView) loginView.style.display = 'none';
+        if (badge) {
+          badge.textContent = '🔐 Cognito JWT Verificado';
+          badge.style.background = '#dcfce7';
+          badge.style.color = '#15803d';
+          badge.style.borderColor = '#86efac';
+        }
+        if (emailSpan) emailSpan.textContent = cognitoUser.email || cognitoUser['cognito:username'] || 'Usuario Cognito';
+        if (details) details.innerHTML = `Identificador real (sub): <code>${actorId}</code>. Token criptográfico activo en cada petición HTTP REST.`;
+      } else {
+        if (loggedView) loggedView.style.display = 'none';
+        if (loginView) loginView.style.display = 'block';
+        if (badge) {
+          badge.textContent = 'Modo Demostración';
+          badge.style.background = '#e0f2fe';
+          badge.style.color = '#0369a1';
+          badge.style.borderColor = '#bae6fd';
+        }
+        if (details) details.textContent = 'Cada usuario solo puede leer y modificar sus propios viajes y reservas en DynamoDB.';
+      }
+    }
+
     function openUserModal() {
-      document.getElementById('um-current-user').textContent = actorId;
+      updateCognitoUI();
       const sel = document.getElementById('um-select-preset');
       if (actorId === 'viajero_colombia_01' || actorId === 'viajero_02') {
         sel.value = actorId;
@@ -1843,9 +2037,13 @@
     // =========================================================================
     async function apiChannel1(path, method = 'GET', bodyObj = null) {
       const url = apiGatewayUrl.replace(/\/$/, '') + path;
+      const headers = { 'Content-Type': 'application/json', 'X-Actor-Id': actorId };
+      if (cognitoIdToken) {
+        headers['Authorization'] = 'Bearer ' + cognitoIdToken;
+      }
       const opts = {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Actor-Id': actorId },
+        headers,
       };
       if (bodyObj) opts.body = JSON.stringify(bodyObj);
       try {
@@ -3093,6 +3291,9 @@
         showToast('Debes seleccionar un viaje al que asociar la reserva.');
         return;
       }
+      const travelersRaw = document.getElementById('rf-travelers')?.value || '';
+      const assignedTravelers = travelersRaw.split(',').map(s => s.trim()).filter(Boolean);
+
       const payload = {
         tripId,
         type: document.getElementById('rf-type').value,
@@ -3103,10 +3304,16 @@
         passengers: Number(document.getElementById('rf-pax').value || 1),
         status: document.getElementById('rf-status').value,
       };
+
+      if (assignedTravelers.length > 0) {
+        payload.assignedTravelers = assignedTravelers;
+        payload.passengers = assignedTravelers.length;
+      }
+
       await apiChannel1('/reservations', 'POST', payload);
       toggleReservationForm(false);
       await refreshAllBusinessData();
-      showToast('Reserva registrada exitosamente en AWS DynamoDB.');
+      showToast('Reserva registrada exitosamente en AWS DynamoDB con viajeros asignados.');
     }
 
     async function updateReservationStatus(reservationId, newStatus) {
