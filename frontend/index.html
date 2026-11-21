@@ -930,11 +930,17 @@
 
       <!-- Tab 1: Iniciar Sesión -->
       <div id="login-tab-content">
-        <!-- Botón Demo Instantáneo (1 Clic) -->
-        <button class="btn btn-primary" onclick="loginDemoCognitoUser(true)" style="width:100%; height:44px; font-size:0.88rem; font-weight:700; margin-bottom:16px; background:#0f172a; color:#ffffff; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;">
-          <i data-lucide="zap" style="width:17px; height:17px; color:#38bdf8;"></i>
-          Entrar con Usuario Demo Cognito (1 Clic)
-        </button>
+        <!-- Botones de Acceso Rápido Multi-Usuario (Aislamiento Total en DynamoDB) -->
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+          <button class="btn btn-primary" onclick="loginPresetUser('viajero.demo@tripplanner.ai', 'TripPlanner2026!')" style="width:100%; height:42px; font-size:0.83rem; font-weight:700; background:#0f172a; color:#ffffff; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <i data-lucide="user-check" style="width:16px; height:16px; color:#38bdf8;"></i>
+            Entrar como Viajero 1 (Principal · Cartagena)
+          </button>
+          <button class="btn btn-outline" onclick="loginPresetUser('viajero.secundario@tripplanner.ai', 'TripPlanner2026!')" style="width:100%; height:40px; font-size:0.82rem; font-weight:600; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px; border-color:#cbd5e1; background:#f8fafc;">
+            <i data-lucide="shield" style="width:15px; height:15px; color:#10b981;"></i>
+            Entrar como Viajero 2 (Cuenta Aislada · Limpia)
+          </button>
+        </div>
 
         <div style="display:flex; align-items:center; text-align:center; margin:14px 0; color:#94a3b8; font-size:0.75rem;">
           <span style="flex:1; border-bottom:1px solid #e2e8f0;"></span>
@@ -1033,19 +1039,23 @@
       </button>
     </nav>
 
-    <div class="session-panel">
-      <div class="session-meta">
-        <div class="session-row">
-          <span>Viajero</span>
-          <code id="ui-actor-id">viajero_01</code>
+    <div class="session-panel" style="background:var(--bg-subtle); border-radius:10px; padding:12px; margin-top:auto;">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:10px;">
+        <div style="width:30px; height:30px; border-radius:50%; background:#0f172a; color:#ffffff; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; flex-shrink:0;" id="sidebar-avatar">
+          VD
         </div>
-        <div class="session-row">
-          <span>Sesión</span>
-          <code id="ui-session-id">sess_01</code>
+        <div style="overflow:hidden; flex:1;">
+          <div style="font-size:0.77rem; font-weight:700; color:var(--ink-900); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" id="sidebar-user-email">
+            viajero.demo@tripplanner.ai
+          </div>
+          <div style="font-size:0.69rem; color:#16a34a; font-weight:600; display:flex; align-items:center; gap:4px;">
+            <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#16a34a;"></span>
+            Sesión Autenticada
+          </div>
         </div>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="openUserModal()" style="width:100%; margin-top:8px; font-size:0.75rem; padding:6px 10px; justify-content:center;">
-        <i data-lucide="user"></i> Cambiar Viajero
+      <button class="btn btn-outline btn-sm" onclick="showLoginScreen()" style="width:100%; font-size:0.73rem; padding:5px 8px; justify-content:center; background:#ffffff;">
+        <i data-lucide="log-out" style="width:13px; height:13px;"></i> Cambiar Cuenta / Salir
       </button>
     </div>
   </aside>
@@ -1892,17 +1902,43 @@
       if (actorEl) actorEl.textContent = actorId;
       const sessEl = document.getElementById('ui-session-id');
       if (sessEl) sessEl.textContent = sessionId;
-      const topLabel = document.getElementById('topbar-user-label');
-      if (topLabel) {
-        topLabel.textContent = (cognitoUser && (cognitoUser.email || cognitoUser['cognito:username']))
-          ? (cognitoUser.email || cognitoUser['cognito:username'])
-          : actorId;
+
+      // Resolver correo amigable para el usuario en lugar de mostrar el UUID/sub crudo
+      let displayEmail = 'viajero.demo@tripplanner.ai';
+      if (cognitoUser && cognitoUser.email) {
+        displayEmail = cognitoUser.email;
+      } else if (actorId === '2468d4b8-a0a1-703d-d006-c06cf44f13ca' || actorId.includes('secundario')) {
+        displayEmail = 'viajero.secundario@tripplanner.ai';
+      } else if (actorId.includes('@')) {
+        displayEmail = actorId;
+      } else if (actorId === 'viajero_02') {
+        displayEmail = 'viajero_02 (Sin Viajes)';
       }
+
+      const topLabel = document.getElementById('topbar-user-label');
+      if (topLabel) topLabel.textContent = displayEmail;
+
       const dashLabel = document.getElementById('dash-user-label');
-      if (dashLabel) {
-        dashLabel.textContent = (cognitoUser && (cognitoUser.email || cognitoUser['cognito:username']))
-          ? (cognitoUser.email || cognitoUser['cognito:username'])
-          : actorId;
+      if (dashLabel) dashLabel.textContent = displayEmail;
+
+      const sidebarEmail = document.getElementById('sidebar-user-email');
+      if (sidebarEmail) sidebarEmail.textContent = displayEmail;
+
+      const avatar = document.getElementById('sidebar-avatar');
+      if (avatar) {
+        avatar.textContent = displayEmail.includes('secundario') || displayEmail.includes('02') ? 'V2' : 'V1';
+      }
+    }
+
+    async function loginPresetUser(email, password) {
+      try {
+        showToast(`Iniciando sesión como ${email} en Amazon Cognito...`);
+        const auth = await executeCognitoAuth(email, password);
+        applyCognitoSession(auth.IdToken, email);
+        hideLoginScreen();
+        showToast(`¡Sesión iniciada con éxito como ${email}!`);
+      } catch (e) {
+        showToast('Error al iniciar sesión: ' + e.message);
       }
     }
 
@@ -2065,9 +2101,12 @@
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         cognitoUser = payload;
+        if (email) cognitoUser.email = email;
         actorId = payload.sub;
         localStorage.setItem('trip_planner_actor_id', actorId);
-      } catch (e) {}
+      } catch (e) {
+        if (email) cognitoUser = { email };
+      }
       updateCognitoUI();
       updateIdentityLabels();
       state.trips = [];
