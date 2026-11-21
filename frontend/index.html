@@ -904,6 +904,103 @@
 <body>
 
   <!-- =======================================================================
+       PANTALLA DE ACCESO Y AUTENTICACIÓN: AMAZON COGNITO USER POOL
+       ======================================================================= -->
+  <div id="login-screen" style="position:fixed; inset:0; z-index:9999; background:radial-gradient(ellipse at 50% 20%, #1e293b 0%, #0f172a 60%, #020617 100%); display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:18px; width:100%; max-width:460px; padding:32px 28px; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.45); color:#0f172a;">
+      
+      <!-- Brand & Header -->
+      <div style="text-align:center; margin-bottom:24px;">
+        <div style="width:48px; height:48px; border-radius:12px; background:#0f172a; color:#ffffff; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; box-shadow:0 4px 10px rgba(15,23,42,0.25);">
+          <i data-lucide="compass" style="width:26px; height:26px;"></i>
+        </div>
+        <h1 style="font-size:1.45rem; font-weight:800; letter-spacing:-0.03em; color:#0f172a; margin-bottom:4px;">TripPlanner AI</h1>
+        <p style="font-size:0.83rem; color:#64748b;">Plataforma de Planificación Multiagente y Gestión de Viajes</p>
+      </div>
+
+      <!-- Security Trust Badge -->
+      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px; margin-bottom:20px; font-size:0.77rem; color:#166534; display:flex; align-items:flex-start; gap:8px;">
+        <i data-lucide="shield-check" style="width:18px; height:18px; flex-shrink:0; color:#16a34a; margin-top:1px;"></i>
+        <div>
+          <strong>Autenticación Criptográfica con Amazon Cognito</strong>
+          <div style="color:#15803d; font-size:0.72rem; margin-top:2px;">
+            User Pool ID: <code>us-east-1_QsEFzUxTM</code> · Tokens JWT verificados en API Gateway y DynamoDB.
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs: Iniciar Sesión / Registrarse -->
+      <div style="display:flex; border-bottom:1px solid #e2e8f0; margin-bottom:20px;">
+        <button id="tab-login-btn" onclick="switchLoginTab('login')" style="flex:1; padding:9px 0; font-size:0.86rem; font-weight:700; background:none; border:none; border-bottom:2px solid #0f172a; color:#0f172a; cursor:pointer;">
+          Iniciar Sesión
+        </button>
+        <button id="tab-register-btn" onclick="switchLoginTab('register')" style="flex:1; padding:9px 0; font-size:0.86rem; font-weight:600; background:none; border:none; border-bottom:2px solid transparent; color:#64748b; cursor:pointer;">
+          Crear Cuenta
+        </button>
+      </div>
+
+      <!-- Tab 1: Iniciar Sesión -->
+      <div id="login-tab-content">
+        <!-- Botón Demo Instantáneo (1 Clic) -->
+        <button class="btn btn-primary" onclick="loginDemoCognitoUser(true)" style="width:100%; height:44px; font-size:0.88rem; font-weight:700; margin-bottom:16px; background:#0f172a; color:#ffffff; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <i data-lucide="zap" style="width:17px; height:17px; color:#38bdf8;"></i>
+          Entrar con Usuario Demo Cognito (1 Clic)
+        </button>
+
+        <div style="display:flex; align-items:center; text-align:center; margin:14px 0; color:#94a3b8; font-size:0.75rem;">
+          <span style="flex:1; border-bottom:1px solid #e2e8f0;"></span>
+          <span style="padding:0 10px; font-weight:500;">o ingresa con tus credenciales</span>
+          <span style="flex:1; border-bottom:1px solid #e2e8f0;"></span>
+        </div>
+
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:0.77rem; font-weight:600; color:#334155; margin-bottom:4px;">Correo Electrónico</label>
+          <input class="input" id="screen-cog-email" type="email" value="viajero.demo@tripplanner.ai" placeholder="nombre@correo.com" style="width:100%; height:38px; border-radius:8px;">
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="font-size:0.77rem; font-weight:600; color:#334155;">Contraseña</label>
+            <span style="font-size:0.7rem; color:#64748b;">(Demo: TripPlanner2026!)</span>
+          </div>
+          <input class="input" id="screen-cog-pass" type="password" value="TripPlanner2026!" placeholder="••••••••••••" style="width:100%; height:38px; border-radius:8px;">
+        </div>
+
+        <button class="btn btn-outline" onclick="submitScreenLogin()" style="width:100%; height:40px; font-size:0.86rem; font-weight:600; border-radius:8px; justify-content:center; margin-bottom:14px;">
+          Iniciar Sesión en AWS Cognito
+        </button>
+      </div>
+
+      <!-- Tab 2: Crear Cuenta -->
+      <div id="register-tab-content" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:0.77rem; font-weight:600; color:#334155; margin-bottom:4px;">Nombre Completo</label>
+          <input class="input" id="reg-cog-name" placeholder="Ej. Carlos Mendoza" style="width:100%; height:38px; border-radius:8px;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:0.77rem; font-weight:600; color:#334155; margin-bottom:4px;">Correo Electrónico</label>
+          <input class="input" id="reg-cog-email" type="email" placeholder="carlos@ejemplo.com" style="width:100%; height:38px; border-radius:8px;">
+        </div>
+        <div style="margin-bottom:18px;">
+          <label style="display:block; font-size:0.77rem; font-weight:600; color:#334155; margin-bottom:4px;">Contraseña (mínimo 8 caracteres)</label>
+          <input class="input" id="reg-cog-pass" type="password" placeholder="Mínimo 8 letras y números" style="width:100%; height:38px; border-radius:8px;">
+        </div>
+        <button class="btn btn-primary" onclick="submitCognitoRegister()" style="width:100%; height:40px; font-size:0.86rem; font-weight:600; border-radius:8px; justify-content:center; margin-bottom:14px; background:#0f172a; color:#ffffff;">
+          Crear Cuenta en Amazon Cognito
+        </button>
+      </div>
+
+      <!-- Modo de Demostración Rápida / Invitado -->
+      <div style="text-align:center; padding-top:14px; border-top:1px dashed #e2e8f0;">
+        <button onclick="enterAsGuest()" style="background:none; border:none; color:#0284c7; font-size:0.78rem; font-weight:600; cursor:pointer; text-decoration:underline;">
+          Continuar en Modo Invitado (viajero_colombia_01) →
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =======================================================================
        SIDEBAR NAVIGATION (6 MÓDULOS)
        ======================================================================= -->
   <aside class="sidebar">
@@ -985,8 +1082,12 @@
           <span class="dot" id="ch2-dot"></span>
           <span id="ch2-label">AgentCore</span>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openUserModal()" title="Cambiar identidad de usuario (actorId en DynamoDB)">
-          <i data-lucide="user"></i> Cambiar Usuario
+        <div class="conn-pill" id="topbar-auth-pill" onclick="openUserModal()" title="Identidad autenticada" style="background:#f0fdf4; border-color:#bbf7d0; color:#166534; cursor:pointer;">
+          <span class="dot" style="background:#16a34a;"></span>
+          <span id="topbar-user-label">viajero_colombia_01</span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="showLoginScreen()" title="Iniciar sesión con otra cuenta o salir a la pantalla de login">
+          <i data-lucide="log-out"></i> Login / Salir
         </button>
         <button class="btn btn-outline btn-sm" onclick="rotateSession()" title="Reinicia el hilo conversacional del chat sin borrar tus datos en DynamoDB">
           <i data-lucide="rotate-cw"></i> Nueva Sesión Chat
@@ -1810,10 +1911,115 @@
     function updateIdentityLabels() {
       document.getElementById('ui-actor-id').textContent = actorId;
       document.getElementById('ui-session-id').textContent = sessionId;
+      const topLabel = document.getElementById('topbar-user-label');
+      if (topLabel) {
+        topLabel.textContent = (cognitoUser && (cognitoUser.email || cognitoUser['cognito:username']))
+          ? (cognitoUser.email || cognitoUser['cognito:username'])
+          : actorId;
+      }
       document.getElementById('ch1-label').textContent = apiGatewayUrl.includes('amazonaws.com')
         ? (cognitoIdToken ? 'API GW + Cognito JWT' : 'API Gateway (AWS)')
         : 'API Negocio (' + apiGatewayUrl.replace('http://', '') + ')';
       document.getElementById('ch2-label').textContent = 'AgentCore (' + agentStreamUrl.replace('http://', '').replace('/invocations', '') + ')';
+    }
+
+    // Funciones de Control de Pantalla de Login y Amazon Cognito
+    function switchLoginTab(tab) {
+      const loginContent = document.getElementById('login-tab-content');
+      const regContent = document.getElementById('register-tab-content');
+      const loginBtn = document.getElementById('tab-login-btn');
+      const regBtn = document.getElementById('tab-register-btn');
+
+      if (tab === 'login') {
+        loginContent.style.display = 'block';
+        regContent.style.display = 'none';
+        loginBtn.style.color = '#0f172a';
+        loginBtn.style.borderBottom = '2px solid #0f172a';
+        regBtn.style.color = '#64748b';
+        regBtn.style.borderBottom = '2px solid transparent';
+      } else {
+        loginContent.style.display = 'none';
+        regContent.style.display = 'block';
+        regBtn.style.color = '#0f172a';
+        regBtn.style.borderBottom = '2px solid #0f172a';
+        loginBtn.style.color = '#64748b';
+        loginBtn.style.borderBottom = '2px solid transparent';
+      }
+    }
+
+    function showLoginScreen() {
+      const screen = document.getElementById('login-screen');
+      if (screen) screen.style.display = 'flex';
+      refreshIcons();
+    }
+
+    function hideLoginScreen() {
+      const screen = document.getElementById('login-screen');
+      if (screen) screen.style.display = 'none';
+    }
+
+    function enterAsGuest() {
+      logoutCognito();
+      hideLoginScreen();
+      showToast('Ingresaste en modo invitado (viajero_colombia_01).');
+    }
+
+    async function submitScreenLogin() {
+      const email = document.getElementById('screen-cog-email')?.value?.trim();
+      const pass = document.getElementById('screen-cog-pass')?.value;
+      if (!email || !pass) {
+        showToast('Ingresa email y contraseña.');
+        return;
+      }
+      try {
+        showToast('Autenticando contra Amazon Cognito...');
+        const auth = await executeCognitoAuth(email, pass);
+        applyCognitoSession(auth.IdToken, email);
+        hideLoginScreen();
+        showToast('¡Sesión iniciada con éxito! Bienvenido a TripPlanner AI.');
+      } catch (e) {
+        showToast('Error de autenticación: ' + e.message);
+      }
+    }
+
+    async function submitCognitoRegister() {
+      const name = document.getElementById('reg-cog-name')?.value?.trim();
+      const email = document.getElementById('reg-cog-email')?.value?.trim();
+      const pass = document.getElementById('reg-cog-pass')?.value;
+      if (!email || !pass) {
+        showToast('El correo y la contraseña son obligatorios.');
+        return;
+      }
+      try {
+        showToast('Registrando usuario en Amazon Cognito...');
+        const endpoint = `https://cognito-idp.${COGNITO_CONFIG.region}.amazonaws.com/`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-amz-json-1.1',
+            'X-Amz-Target': 'AWSCognitoIdentityProviderService.SignUp'
+          },
+          body: JSON.stringify({
+            ClientId: COGNITO_CONFIG.clientId,
+            Username: email,
+            Password: pass,
+            UserAttributes: [
+              { Name: 'email', Value: email },
+              { Name: 'name', Value: name || 'Viajero' }
+            ]
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || data.__type || 'Error en registro');
+        }
+        showToast('Cuenta creada en Cognito. Ahora puedes iniciar sesión.');
+        switchLoginTab('login');
+        document.getElementById('screen-cog-email').value = email;
+        document.getElementById('screen-cog-pass').value = pass;
+      } catch (e) {
+        showToast('Error en registro: ' + e.message);
+      }
     }
 
     // Funciones de Autenticación con Amazon Cognito User Pool
@@ -1841,11 +2047,12 @@
       return data.AuthenticationResult;
     }
 
-    async function loginDemoCognitoUser() {
+    async function loginDemoCognitoUser(fromScreen = false) {
       try {
         showToast('Autenticando contra Amazon Cognito User Pool...');
         const auth = await executeCognitoAuth('viajero.demo@tripplanner.ai', 'TripPlanner2026!');
         applyCognitoSession(auth.IdToken, 'viajero.demo@tripplanner.ai');
+        if (fromScreen) hideLoginScreen();
         showToast('¡Sesión Cognito iniciada! Token JWT verificado en AWS.');
       } catch (e) {
         showToast('Error autenticando con Cognito: ' + e.message);
@@ -3384,7 +3591,12 @@
       showToast('Configuración actualizada.');
     }
 
-    // INIT
+    // INIT & AUTENTICACIÓN
+    if (cognitoIdToken && cognitoUser) {
+      hideLoginScreen();
+    } else {
+      showLoginScreen();
+    }
     updateIdentityLabels();
     renderFlightCards();
     renderWeatherModule();
