@@ -11,6 +11,8 @@ Plataforma inteligente de planificación y gestión de viajes que implementa una
 * **Wildherman Betancourt**
 * **Angie Fuentes**
 
+> **Estado del Proyecto:** ✅ **Agentes Completados** — Sistema Multiagente con Amazon Bedrock AgentCore, AWS Lambda Function URL con IAM SigV4, Proxy Streaming, Grounding internacional y Frontend Agent-Driven UI 100% desplegado en AWS.
+
 ---
 
 ## 📑 Tabla de Contenidos
