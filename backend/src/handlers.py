@@ -1503,7 +1503,6 @@ def agent_chat_proxy_handler(event: Dict[str, Any], context: Any = None) -> Dict
             return {
                 "statusCode": 200,
                 "headers": {
-                    **_cors_headers(),
                     "Content-Type": "text/event-stream; charset=utf-8",
                     "Cache-Control": "no-cache",
                 },
@@ -1515,7 +1514,6 @@ def agent_chat_proxy_handler(event: Dict[str, Any], context: Any = None) -> Dict
         return {
             "statusCode": 200,
             "headers": {
-                **_cors_headers(),
                 "Content-Type": "text/event-stream; charset=utf-8",
             },
             "body": err_stream,
