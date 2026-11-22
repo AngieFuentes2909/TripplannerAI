@@ -1449,8 +1449,7 @@ def agent_chat_proxy_handler(event: Dict[str, Any], context: Any = None) -> Dict
                     break
             if matched:
                 city_disp, iata = matched
-                fl_res = op_search_flights_mcp({"origin": "BOG", "destination": iata, "date": "2026-12-20"})
-                fls = fl_res.get("flights", [])
+                fls = _generate_fallback_flights("BOG", iata, "2026-12-20")
                 wx_res = op_get_weather_mcp({"city": city_disp, "days": 4})
                 temp = wx_res.get("temp", "N/A")
                 cond = wx_res.get("cond", "Despejado")

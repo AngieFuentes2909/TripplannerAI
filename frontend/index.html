@@ -2531,7 +2531,7 @@
 
       const bub = document.createElement('div');
       bub.className = 'chat-bubble';
-      bub.innerHTML = text ? marked.parse(text) : '<span style="color:var(--ink-500);">Consultando agentes especialistas...</span>';
+      bub.innerHTML = text ? marked.parse(text) : '<span style="display:inline-flex; align-items:center; gap:6px; color:var(--ink-500);"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#0284c7;"></span> Generando respuesta con agentes especialistas...</span>';
 
       row.appendChild(av);
       row.appendChild(bub);
@@ -2665,9 +2665,9 @@
       bubble.innerHTML = marked.parse(cleanMd) + widgetsHtml;
     }
     async function callAgentEndpoint(promptText, url) {
-      let targetUrl = url;
-      if (!targetUrl || targetUrl.includes('bedrock-agentcore.us-east-1.amazonaws.com') || targetUrl.includes('execute-api.us-east-1.amazonaws.com/prod/chat')) {
-        targetUrl = 'https://jbrbzha6fvqvf4ncttcoundpsa0thygh.lambda-url.us-east-1.on.aws/';
+      let targetUrl = 'https://jbrbzha6fvqvf4ncttcoundpsa0thygh.lambda-url.us-east-1.on.aws/';
+      if (url && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+        targetUrl = url;
       }
       const headers = {
         'Content-Type': 'application/json',
