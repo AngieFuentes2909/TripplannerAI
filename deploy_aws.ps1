@@ -34,7 +34,7 @@ aws cloudformation package `
 aws cloudformation deploy `
     --template-file packaged.yaml `
     --stack-name $StackName `
-    --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND `
+    --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND `
     --region $Region
 
 # 4. Obtener Outputs y sincronizar Frontend a S3
@@ -43,7 +43,7 @@ $frontendBucket = (aws cloudformation describe-stacks --stack-name $StackName --
 $websiteUrl = (aws cloudformation describe-stacks --stack-name $StackName --region $Region --query "Stacks[0].Outputs[?OutputKey=='FrontendWebsiteUrl'].OutputValue" --output text).Trim()
 
 Write-Host "[3/4] Publicando Frontend (frontend/index.html) en S3 Bucket: $frontendBucket..." -ForegroundColor Yellow
-aws s3 sync frontend/ "s3://$frontendBucket/" --region $Region
+aws s3 sync frontend/ "s3://$frontendBucket/" --cache-control "no-cache, no-store, must-revalidate" --delete --region $Region
 
 Write-Host "[4/4] Validando configuración de Amazon Bedrock AgentCore..." -ForegroundColor Yellow
 agentcore validate

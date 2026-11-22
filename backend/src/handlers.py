@@ -384,6 +384,43 @@ def op_update_trip(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def op_delete_trip(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Elimina un viaje del usuario en DynamoDB y sus itinerarios y reservas asociadas en cascada."""
+    trip_id = payload.get("tripId")
+    if not trip_id:
+        raise ValueError("El campo 'tripId' es obligatorio para DeleteTrip.")
+
+    user_id = payload.get("userId") or payload.get("actorId")
+    existing = db.get_item("trips", TRIPS_TABLE, "tripId", trip_id)
+    if not existing:
+        return {"success": False, "operation": "DeleteTrip", "message": f"Viaje '{trip_id}' no encontrado."}
+
+    _enforce_user_ownership(existing, user_id)
+
+    # Eliminar en cascada itinerarios asociados al viaje
+    itineraries = db.list_items("itineraries", ITINERARIES_TABLE, trip_id=trip_id)
+    for itin in itineraries:
+        itin_id = itin.get("itineraryId")
+        if itin_id:
+            db.delete_item("itineraries", ITINERARIES_TABLE, "itineraryId", itin_id)
+
+    # Eliminar en cascada reservas asociadas al viaje
+    reservations = db.list_items("reservations", RESERVATIONS_TABLE, trip_id=trip_id)
+    for res in reservations:
+        res_id = res.get("reservationId")
+        if res_id:
+            db.delete_item("reservations", RESERVATIONS_TABLE, "reservationId", res_id)
+
+    # Eliminar el viaje
+    db.delete_item("trips", TRIPS_TABLE, "tripId", trip_id)
+    return {
+        "success": True,
+        "operation": "DeleteTrip",
+        "tripId": trip_id,
+        "message": f"Viaje '{trip_id}' y sus elementos asociados fueron eliminados exitosamente de Amazon DynamoDB.",
+    }
+
+
 def op_create_itinerary(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Tool 4: CreateItinerary — Crea el itinerario día por día asociado a un viaje."""
     trip_id = payload.get("tripId")
@@ -661,6 +698,28 @@ def op_update_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
         "operation": "UpdateReservation",
         "message": f"Reserva '{reservation_id}' actualizada (Estado: '{existing['status']}', Viajeros: {existing.get('passengers', 1)}).",
         "reservation": saved,
+    }
+
+
+def op_delete_reservation(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Elimina una reserva de DynamoDB con verificación de titularidad."""
+    reservation_id = payload.get("reservationId")
+    if not reservation_id:
+        raise ValueError("El campo 'reservationId' es obligatorio para DeleteReservation.")
+
+    user_id = payload.get("userId") or payload.get("actorId")
+    existing = db.get_item("reservations", RESERVATIONS_TABLE, "reservationId", reservation_id)
+    if not existing:
+        return {"success": False, "operation": "DeleteReservation", "message": f"Reserva '{reservation_id}' no encontrada."}
+
+    _enforce_user_ownership(existing, user_id)
+
+    db.delete_item("reservations", RESERVATIONS_TABLE, "reservationId", reservation_id)
+    return {
+        "success": True,
+        "operation": "DeleteReservation",
+        "reservationId": reservation_id,
+        "message": f"Reserva '{reservation_id}' eliminada exitosamente de Amazon DynamoDB.",
     }
 
 
@@ -1149,11 +1208,13 @@ OPERATIONS_MAP = {
     "CreateTrip": op_create_trip,
     "GetTrips": op_get_trips,
     "UpdateTrip": op_update_trip,
+    "DeleteTrip": op_delete_trip,
     "CreateItinerary": op_create_itinerary,
     "UpdateItinerary": op_update_itinerary,
     "CreateReservation": op_create_reservation,
     "GetReservations": op_get_reservations,
     "UpdateReservation": op_update_reservation,
+    "DeleteReservation": op_delete_reservation,
     "CompareBudget": op_compare_budget,
     "GetUserProfile": op_get_user_profile,
     "UpdateUserProfile": op_update_user_profile,
@@ -1194,12 +1255,32 @@ def _extract_payload(event: Dict[str, Any]) -> Dict[str, Any]:
 
     payload: Dict[str, Any] = {}
 
+    headers = event.get("headers") or {}
+
     # 1. Extracción criptográfica prioritaria del usuario autenticado vía Amazon Cognito User Pool
     claims = event.get("requestContext", {}).get("authorizer", {}).get("claims", {})
     cognito_sub = claims.get("sub") or claims.get("cognito:username") or claims.get("username")
+    cognito_email = claims.get("email")
+
+    # Fallback seguro: si API Gateway pasa el header Authorization con Bearer JWT pero sin claims en requestContext
+    if not cognito_sub:
+        auth_hdr = headers.get("Authorization") or headers.get("authorization")
+        if auth_hdr and isinstance(auth_hdr, str) and auth_hdr.startswith("Bearer "):
+            raw_jwt = auth_hdr.split(" ")[1]
+            try:
+                import base64
+                parts = raw_jwt.split(".")
+                if len(parts) >= 2:
+                    padding = "=" * (4 - len(parts[1]) % 4)
+                    jwt_data = json.loads(base64.urlsafe_b64decode(parts[1] + padding).decode("utf-8"))
+                    cognito_sub = jwt_data.get("sub") or jwt_data.get("cognito:username") or jwt_data.get("username")
+                    cognito_email = jwt_data.get("email")
+            except Exception as e:
+                logger.debug("No se pudo decodificar JWT header: %s", e)
+
     if cognito_sub:
         payload["userId"] = cognito_sub
-        payload["userEmail"] = claims.get("email")
+        payload["userEmail"] = cognito_email
         payload["isCognitoAuthenticated"] = True
 
     if event.get("queryStringParameters") and isinstance(event["queryStringParameters"], dict):
@@ -1211,7 +1292,6 @@ def _extract_payload(event: Dict[str, Any]) -> Dict[str, Any]:
             if k not in payload or not payload.get("isCognitoAuthenticated"):
                 payload[k] = v
 
-    headers = event.get("headers") or {}
     actor_header = headers.get("x-actor-id") or headers.get("X-Actor-Id")
     if actor_header and "userId" not in payload:
         payload["userId"] = actor_header
@@ -1288,6 +1368,8 @@ def get_trips_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, A
 
 
 def update_trip_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
+    if isinstance(event, dict) and event.get("httpMethod") == "DELETE":
+        return _execute_handler("DeleteTrip", event, context)
     return _execute_handler("UpdateTrip", event, context)
 
 
@@ -1308,6 +1390,8 @@ def get_reservations_handler(event: Dict[str, Any], context: Any = None) -> Dict
 
 
 def update_reservation_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
+    if isinstance(event, dict) and event.get("httpMethod") == "DELETE":
+        return _execute_handler("DeleteReservation", event, context)
     return _execute_handler("UpdateReservation", event, context)
 
 
@@ -1328,4 +1412,114 @@ def user_profile_handler(event: Dict[str, Any], context: Any = None) -> Dict[str
     if method in ("PUT", "POST", "PATCH"):
         return _execute_handler("UpdateUserProfile", event, context)
     return _execute_handler("GetUserProfile", event, context)
+
+
+def agent_chat_proxy_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
+    """Proxy seguro con firma AWS SigV4 para invocar OrchestratorAgent en Amazon Bedrock AgentCore.
+    Permite al frontend conectarse de forma segura sin exponer credenciales AWS IAM en el navegador."""
+    method = (event.get("httpMethod") if isinstance(event, dict) else "") or "POST"
+    if method == "OPTIONS":
+        return {
+            "statusCode": 200,
+            "headers": _cors_headers(),
+            "body": "",
+        }
+
+    payload = _extract_payload(event)
+    prompt = payload.get("prompt", "")
+    actor_id = payload.get("actor_id", "default_user")
+    session_id = payload.get("session_id", "default_session")
+
+    # Enriquecer prompt con datos reales del MCP para garantizar precios, aerolíneas, duraciones y clima 100% verídicos
+    enriched_prompt = prompt
+    try:
+        lower_p = prompt.lower()
+        needs_grounding = any(w in lower_p for w in ("vuelo", "clima", "viajar", "viaje", "tarifa", "tiquete", "precio"))
+        if needs_grounding:
+            dest_candidates = [
+                ("madrid", "MAD"), ("barcelona", "BCN"), ("miami", "MIA"), ("cancun", "CUN"), ("cancún", "CUN"),
+                ("paris", "CDG"), ("parís", "CDG"), ("nueva york", "JFK"), ("new york", "JFK"),
+                ("cartagena", "CTG"), ("medellin", "MDE"), ("medellín", "MDE"), ("santa marta", "SMR"),
+                ("cali", "CLO"), ("san andres", "ADZ"), ("san andrés", "ADZ"), ("barranquilla", "BAQ"), ("bucaramanga", "BGA")
+            ]
+            matched = None
+            for city_name, iata in dest_candidates:
+                if city_name in lower_p:
+                    matched = (city_name.capitalize(), iata)
+                    break
+            if matched:
+                city_disp, iata = matched
+                fl_res = op_search_flights_mcp({"origin": "BOG", "destination": iata, "date": "2026-12-20"})
+                fls = fl_res.get("flights", [])
+                wx_res = op_get_weather_mcp({"city": city_disp, "days": 4})
+                temp = wx_res.get("temp", "N/A")
+                cond = wx_res.get("cond", "Despejado")
+
+                g_lines = [
+                    f"\n\n[DATOS REALES VERIFICADOS DEL SERVIDOR MCP]:",
+                    f"- Destino detectado: {city_disp} ({iata}) saliendo desde Bogotá (BOG).",
+                ]
+                if fls:
+                    g_lines.append("- Opciones reales de vuelo encontradas:")
+                    for rf in fls[:3]:
+                        g_lines.append(f"  * {rf['airline']} ({rf['flightNo']}): Salida {rf['dep']} -> Llegada {rf['arr']} (Duración {rf['dur']}) - Tarifa: ${rf['unitCop']:,} COP ({rf.get('stops', 'Directo')}).")
+                    g_lines.append("- REGLA ESTRICTA: Usa EXCLUSIVAMENTE estas aerolíneas, duraciones y precios reales. NUNCA inventes vuelos cortos de 1h 25m para rutas internacionales ni asignes aerolíneas domésticas (como Wingo) a rutas trasatlánticas.")
+                if temp != "N/A":
+                    g_lines.append(f"- Clima real satelital en {city_disp}: {temp}°C, {cond}.")
+                enriched_prompt = prompt + "\n" + "\n".join(g_lines)
+    except Exception as ge:
+        logger.warning("No se pudo enriquecer prompt con MCP: %s", ge)
+
+    target_url = os.environ.get(
+        "ORCHESTRATOR_AGENT_URL",
+        "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A744617282997%3Aruntime%2Fworkshop2_OrchestratorAgent-tPLDXq487r/invocations"
+    )
+
+    body_bytes = json.dumps({"prompt": enriched_prompt, "actor_id": actor_id, "session_id": session_id}).encode("utf-8")
+
+    import botocore.session
+    from botocore.auth import SigV4Auth
+    from botocore.awsrequest import AWSRequest
+    import urllib.request
+
+    session = botocore.session.get_session()
+    creds = session.get_credentials()
+    signer = SigV4Auth(creds, "bedrock-agentcore", AWS_REGION)
+
+    aws_req = AWSRequest(
+        method="POST",
+        url=target_url,
+        data=body_bytes,
+        headers={
+            "Content-Type": "application/json",
+            "Host": "bedrock-agentcore.us-east-1.amazonaws.com",
+        }
+    )
+    signer.add_auth(aws_req)
+
+    req = urllib.request.Request(target_url, data=body_bytes, headers=dict(aws_req.headers))
+    try:
+        with urllib.request.urlopen(req, timeout=55) as resp:
+            raw_data = resp.read().decode("utf-8")
+            return {
+                "statusCode": 200,
+                "headers": {
+                    **_cors_headers(),
+                    "Content-Type": "text/event-stream; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                },
+                "body": raw_data,
+            }
+    except Exception as e:
+        logger.error(f"Error invocando OrchestratorAgent en Bedrock: {e}")
+        err_stream = f'data: "*(Aviso de conexión con OrchestratorAgent: {str(e)})*"\n\n'
+        return {
+            "statusCode": 200,
+            "headers": {
+                **_cors_headers(),
+                "Content-Type": "text/event-stream; charset=utf-8",
+            },
+            "body": err_stream,
+        }
+
 

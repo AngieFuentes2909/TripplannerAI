@@ -230,11 +230,15 @@ Resources:
     Properties:
       CodeUri: backend.zip
       FunctionName: TripPlanner-UpdateTrip
-      Description: Actualiza los datos o estado de un viaje existente (Tool UpdateTrip y PUT /trips/{tripId})
+      Description: Actualiza o elimina un viaje existente y sus elementos asociados en DynamoDB (PUT/DELETE /trips/{tripId})
       Handler: handlers.update_trip_handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref TripsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ItinerariesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReservationsTable
       Events:
         UpdateTripApi:
           Type: Api
@@ -248,6 +252,12 @@ Resources:
             RestApiId: !Ref TripPlannerApi
             Path: /trips
             Method: PUT
+        DeleteTripApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /trips/{tripId}
+            Method: DELETE
 
   # Tool 4: CreateItinerary
   CreateItineraryFunction:
@@ -361,6 +371,12 @@ Resources:
             RestApiId: !Ref TripPlannerApi
             Path: /reservations
             Method: PUT
+        DeleteReservationApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /reservations/{reservationId}
+            Method: DELETE
 
   # Tool 9 (Funcionalidad Opcional): CompareBudget — Comparador de Presupuestos
   CompareBudgetFunction:
@@ -462,6 +478,31 @@ Resources:
           Properties:
             RestApiId: !Ref TripPlannerApi
             Path: /profile
+            Method: POST
+
+  # Proxy seguro con SigV4 para invocar OrchestratorAgent en Amazon Bedrock AgentCore
+  AgentChatProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: backend.zip
+      FunctionName: TripPlanner-AgentChatProxy
+      Description: Proxy seguro con SigV4 para invocar OrchestratorAgent en Amazon Bedrock AgentCore
+      Handler: handlers.agent_chat_proxy_handler
+      Timeout: 90
+      MemorySize: 512
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock-agentcore:*
+                - bedrock:*
+              Resource: '*'
+      Events:
+        PostAgentChatApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TripPlannerApi
+            Path: /chat
             Method: POST
 
   # ============================================================================

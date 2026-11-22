@@ -916,6 +916,7 @@
         </div>
         <h1 style="font-size:1.45rem; font-weight:800; letter-spacing:-0.03em; color:#0f172a; margin-bottom:4px;">TripPlanner AI</h1>
         <p style="font-size:0.83rem; color:#64748b;">Plataforma de Planificación Multiagente y Gestión de Viajes</p>
+        <div style="font-size:0.73rem; color:#0284c7; font-weight:600; margin-top:4px;">Daniela Heredia · Wildherman Betancourt · Angie Fuentes</div>
       </div>
 
       <!-- Tabs: Iniciar Sesión / Registrarse -->
@@ -934,11 +935,11 @@
         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
           <button class="btn btn-primary" onclick="loginPresetUser('viajero.demo@tripplanner.ai', 'TripPlanner2026!')" style="width:100%; height:42px; font-size:0.83rem; font-weight:700; background:#0f172a; color:#ffffff; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px;">
             <i data-lucide="user-check" style="width:16px; height:16px; color:#38bdf8;"></i>
-            Entrar como Viajero 1 (Principal · Cartagena)
+            Entrar como Usuario Demo 1 (Cuenta Principal)
           </button>
           <button class="btn btn-outline" onclick="loginPresetUser('viajero.secundario@tripplanner.ai', 'TripPlanner2026!')" style="width:100%; height:40px; font-size:0.82rem; font-weight:600; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px; border-color:#cbd5e1; background:#f8fafc;">
             <i data-lucide="shield" style="width:15px; height:15px; color:#10b981;"></i>
-            Entrar como Viajero 2 (Cuenta Aislada · Limpia)
+            Entrar como Usuario Demo 2 (Cuenta Aislada / Nueva)
           </button>
         </div>
 
@@ -1057,6 +1058,10 @@
       <button class="btn btn-outline btn-sm" onclick="showLoginScreen()" style="width:100%; font-size:0.73rem; padding:5px 8px; justify-content:center; background:#ffffff;">
         <i data-lucide="log-out" style="width:13px; height:13px;"></i> Cambiar Cuenta / Salir
       </button>
+      <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); font-size:0.67rem; color:var(--ink-500); text-align:center; line-height:1.4;">
+        <span style="font-weight:700; color:var(--ink-700);">Equipo de Desarrollo:</span><br>
+        Daniela Heredia · Wildherman Betancourt · Angie Fuentes
+      </div>
     </div>
   </aside>
 
@@ -1220,11 +1225,11 @@
               Consultas Sugeridas
             </div>
             <div class="prompt-list">
-              <button class="prompt-item" onclick="sendPresetPrompt('Quiero organizar unas vacaciones de cuatro días en Cartagena. Salgo desde Bogotá, viajo con dos personas más y tengo un presupuesto de 5 millones de pesos. Quiero conocer el clima, encontrar vuelos y organizar algunas actividades turísticas.')">
-                <strong>1. Planificar viaje a Cartagena</strong>
+              <button class="prompt-item" onclick="sendPresetPrompt('Quiero organizar unas vacaciones de cuatro días saliendo desde Bogotá para 3 personas con un presupuesto total de 5 millones de pesos colombianos. ¿Qué opciones de vuelos y clima existen para mi viaje?')">
+                <strong>1. Planificar un nuevo viaje</strong>
                 4 días desde Bogotá · 3 viajeros · Presupuesto $5.000.000 COP.
               </button>
-              <button class="prompt-item" onclick="sendPresetPrompt('Por favor guarda este viaje a Cartagena en DynamoDB (CreateTrip para 3 personas y presupuesto 5000000 COP), crea el itinerario de 4 días (CreateItinerary) y registra la reserva simulada del vuelo con Avianca (CreateReservation).')">
+              <button class="prompt-item" onclick="sendPresetPrompt('Por favor guarda este viaje en DynamoDB (CreateTrip para 3 personas y presupuesto 5000000 COP), crea el itinerario de 4 días (CreateItinerary) y registra la reserva simulada del vuelo (CreateReservation).')">
                 <strong>2. Guardar viaje, itinerario y reserva</strong>
                 Registra el plan completo en la base de datos.
               </button>
@@ -1232,7 +1237,7 @@
                 <strong>3. Consultar viajes y reservas</strong>
                 Recupera el historial almacenado del viajero.
               </button>
-              <button class="prompt-item" onclick="sendPresetPrompt('¿Qué recuerdas de mis preferencias de viaje y del itinerario que organizamos para Cartagena?')">
+              <button class="prompt-item" onclick="sendPresetPrompt('¿Qué recuerdas de mis preferencias de viaje y de los destinos que hemos organizado?')">
                 <strong>4. Contexto de sesiones previas</strong>
                 Recupera preferencias desde la memoria del agente.
               </button>
@@ -1266,7 +1271,7 @@
           </div>
           <div class="field">
             <label>Ciudad o Aeropuerto de Destino (Cualquier ciudad o IATA)</label>
-            <input class="input" list="airports-datalist" id="fl-dest" value="Cartagena (CTG)" placeholder="Escribe cualquier ciudad o código IATA (ej. Cartagena, SMR, Miami)...">
+            <input class="input" list="airports-datalist" id="fl-dest" value="" placeholder="Escribe cualquier ciudad o código IATA (ej. CTG, MDE, SMR, MIA, MAD)...">
           </div>
           <div class="field">
             <label>Fecha de Salida</label>
@@ -1342,7 +1347,7 @@
         <div class="filter-bar">
           <div class="field">
             <label>Ciudad de Destino (Escribe cualquier ciudad de Colombia o del mundo)</label>
-            <input class="input" list="cities-datalist" id="wx-city" value="Cartagena de Indias" placeholder="Escribe cualquier ciudad (ej. Santa Marta, Bucaramanga, Madrid, Tokio)...">
+            <input class="input" list="cities-datalist" id="wx-city" value="" placeholder="Escribe cualquier ciudad (ej. Cartagena, Medellín, Santa Marta, Madrid)...">
           </div>
           <div class="field">
             <label>Fecha de Inicio</label>
@@ -1530,7 +1535,9 @@
         </div>
 
         <div class="surface-card" id="res-form-card" style="display:none; margin-bottom:22px;">
-          <h3 style="font-size:0.96rem; font-weight:700; margin-bottom:14px;">Registrar Reserva</h3>
+          <h3 style="font-size:0.96rem; font-weight:700; margin-bottom:4px;" id="res-form-title">Registrar Reserva</h3>
+          <p style="font-size:0.8rem; color:var(--ink-500); margin-bottom:14px;">Vincula tiquetes de vuelos, hoteles o actividades a tus viajes guardados en Amazon DynamoDB.</p>
+          <input type="hidden" id="rf-id">
           <div class="filter-bar" style="padding:0; border:none; margin-bottom:14px;">
             <div class="field">
               <label>Viaje Asociado</label>
@@ -1580,7 +1587,7 @@
           </div>
           <div style="display:flex; justify-content:flex-end; gap:8px;">
             <button class="btn btn-outline" onclick="toggleReservationForm(false)">Cancelar</button>
-            <button class="btn btn-primary" onclick="submitReservationForm()">Guardar Reserva</button>
+            <button class="btn btn-primary" id="btn-save-res" onclick="submitReservationForm()">Guardar Reserva</button>
           </div>
         </div>
 
@@ -1810,7 +1817,7 @@
         <div class="field" style="margin-top:10px; margin-bottom:8px;">
           <label>Perfil rápido</label>
           <select class="input" id="um-select-preset" onchange="onUserPresetChange()">
-            <option value="viajero_colombia_01">viajero_colombia_01 (Principal · Cartagena y Medellín)</option>
+            <option value="viajero_colombia_01">viajero_colombia_01 (Cuenta Demo Principal)</option>
             <option value="viajero_02">viajero_02 (Alternativo · Limpio sin viajes)</option>
             <option value="custom">Otro usuario personalizado...</option>
           </select>
@@ -1875,8 +1882,8 @@
     }
 
     let agentStreamUrl = localStorage.getItem('trip_planner_agent_url');
-    if (!agentStreamUrl || agentStreamUrl.includes('localhost')) {
-      agentStreamUrl = 'https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A744617282997%3Aruntime%2Fworkshop2_OrchestratorAgent-tPLDXq487r/invocations';
+    if (!agentStreamUrl || agentStreamUrl.includes('bedrock-agentcore') || agentStreamUrl.includes('localhost') || agentStreamUrl.includes('execute-api')) {
+      agentStreamUrl = 'https://jbrbzha6fvqvf4ncttcoundpsa0thygh.lambda-url.us-east-1.on.aws/';
       localStorage.setItem('trip_planner_agent_url', agentStreamUrl);
     }
 
@@ -2321,9 +2328,11 @@
       const userLbl = document.getElementById('dash-user-label');
       if (userLbl) userLbl.textContent = getDisplayEmail();
 
-      document.getElementById('kpi-trips').textContent = state.trips.length;
+      const kpiTrips = document.getElementById('kpi-trips');
+      if (kpiTrips) kpiTrips.textContent = `${state.trips.length} viajes · ${state.reservations.length} reservas`;
       const budgetSum = state.trips.reduce((acc, t) => acc + Number(t.budgetCop || 0), 0);
-      document.getElementById('kpi-budget').textContent = formatCop(budgetSum);
+      const kpiBudget = document.getElementById('kpi-budget');
+      if (kpiBudget) kpiBudget.textContent = formatCop(budgetSum);
 
       const resTotal = state.reservations.reduce((acc, r) => acc + Number(r.priceCop || 0), 0);
       const kpiCommitted = document.getElementById('kpi-committed');
@@ -2345,11 +2354,11 @@
         kpiHealth.textContent = diff >= 0 ? 'Margen financiero disponible' : 'Sobrecosto detectado';
       }
 
-      document.getElementById('kpi-reservations').textContent = state.reservations.length;
       const sim = state.reservations.filter(r => r.status === 'Simulada').length;
       const pen = state.reservations.filter(r => r.status === 'Pendiente').length;
       const conf = state.reservations.filter(r => r.status === 'Confirmada').length;
-      document.getElementById('kpi-res-breakdown').textContent = `${conf} confirmadas · ${pen} pendientes · ${sim} simuladas`;
+      const kpiResBreakdown = document.getElementById('kpi-res-breakdown');
+      if (kpiResBreakdown) kpiResBreakdown.textContent = `${conf} confirmadas · ${pen} pendientes · ${sim} simuladas`;
 
       const tBox = document.getElementById('dashboard-trips-list');
       if (!state.trips.length) {
@@ -2375,6 +2384,8 @@
               <div style="text-align:right;">
                 <div class="num" style="font-size:0.82rem; font-weight:600;">${formatCop(t.budgetCop)}</div>
                 <div style="display:flex; align-items:center; gap:6px; margin-top:4px; justify-content:flex-end;">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.7rem;" onclick="editTripById('${t.tripId}')" title="Editar Viaje"><i data-lucide="edit-3" style="width:12px; height:12px;"></i></button>
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.7rem; color:#b91c1c; border-color:#fecaca;" onclick="deleteTrip('${t.tripId}')" title="Eliminar Viaje"><i data-lucide="trash-2" style="width:12px; height:12px;"></i></button>
                   <span class="pill pill-${t.status || 'Planificado'}">${t.status || 'Planificado'}</span>
                   <span class="num" style="font-size:0.72rem; color:var(--ink-500);">${tPct}%</span>
                 </div>
@@ -2404,11 +2415,16 @@
             </div>
             <div style="text-align:right;">
               <div class="num" style="font-size:0.82rem; font-weight:600;">${formatCop(r.priceCop)}</div>
-              <span class="pill pill-${r.status}" style="margin-top:4px;">${r.status}</span>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:4px; justify-content:flex-end;">
+                <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.7rem;" onclick="openEditReservation('${r.reservationId}')" title="Editar"><i data-lucide="edit-2" style="width:12px; height:12px;"></i></button>
+                <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.7rem; color:#b91c1c; border-color:#fecaca;" onclick="deleteReservation('${r.reservationId}')" title="Eliminar"><i data-lucide="trash-2" style="width:12px; height:12px;"></i></button>
+                <span class="pill pill-${r.status}">${r.status}</span>
+              </div>
             </div>
           </div>
         `).join('');
       }
+      refreshIcons();
     }
 
     // =========================================================================
@@ -2567,7 +2583,7 @@
                 Comparador de Presupuestos · ${comp.tripTitle || comp.tripId} (${comp.travelers || 1} viajeros)
               </div>
               <div style="font-size:0.84rem; color:var(--ink-700); margin-top:2px;">
-                Ruta: <strong>${comp.origin || 'Bogotá'} → ${comp.destination || 'Cartagena'}</strong> · ID: <code>${comp.tripId}</code>
+                Ruta: <strong>${comp.origin || 'Origen'} → ${comp.destination || 'Destino'}</strong> · ID: <code>${comp.tripId}</code>
               </div>
             </div>
             <span style="padding:4px 10px; border-radius:99px; font-size:0.73rem; font-weight:700; background:${alertBg}; color:${alertColor}; border:1px solid ${alertBorder};">
@@ -2649,9 +2665,21 @@
       bubble.innerHTML = marked.parse(cleanMd) + widgetsHtml;
     }
     async function callAgentEndpoint(promptText, url) {
-      return await fetch(url, {
+      let targetUrl = url;
+      if (!targetUrl || targetUrl.includes('bedrock-agentcore.us-east-1.amazonaws.com') || targetUrl.includes('execute-api.us-east-1.amazonaws.com/prod/chat')) {
+        targetUrl = 'https://jbrbzha6fvqvf4ncttcoundpsa0thygh.lambda-url.us-east-1.on.aws/';
+      }
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Actor-Id': actorId,
+        'X-Session-Id': sessionId,
+      };
+      if (typeof cognitoIdToken !== 'undefined' && cognitoIdToken) {
+        headers['Authorization'] = 'Bearer ' + cognitoIdToken;
+      }
+      return await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ prompt: promptText, actor_id: actorId, session_id: sessionId }),
       });
     }
@@ -2680,7 +2708,8 @@
           throw firstErr;
         }
 
-        document.getElementById('ch2-dot').className = 'dot';
+        const ch2 = document.getElementById('ch2-dot');
+        if (ch2) ch2.className = 'dot';
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -2735,7 +2764,7 @@
           actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('flights')">✈️ Explorar Vuelos en Vivo</button>`;
         }
         if (lowerFull.includes('clima') || lowerFull.includes('temperatura') || prompt.toLowerCase().includes('clima')) {
-          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('weather')">🌤️ Ver Clima en Vivo (Cartagena)</button>`;
+          actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('weather')">🌤️ Ver Clima en Vivo</button>`;
         }
         if (lowerFull.includes('itinerario') || lowerFull.includes('viaje') || lowerFull.includes('actividad') || prompt.toLowerCase().includes('viaje')) {
           actionButtons += `<button class="btn btn-outline" style="font-size:0.75rem; padding:4px 10px;" onclick="switchView('trips')">📅 Ver Itinerarios y Viajes</button>`;
@@ -2758,7 +2787,8 @@
 
         setTimeout(() => refreshAllBusinessData(), 600);
       } catch (err) {
-        document.getElementById('ch2-dot').className = 'dot warn';
+        const ch2 = document.getElementById('ch2-dot');
+        if (ch2) ch2.className = 'dot warn';
         agentBubble.innerHTML = `<span style="color:#b91c1c;">No fue posible conectar con el servicio de agentes en <code>${agentStreamUrl}</code> (${err.message}).</span><br><small style="color:var(--ink-500);">Verifica que el OrchestratorAgent esté activo o ajusta la URL en Conexiones.</small>`;
       } finally {
         input.disabled = false;
@@ -2778,8 +2808,8 @@
     // MÓDULO 3: VUELOS EN TIEMPO REAL VÍA SERVIDOR MCP (https://ignav.com/mcp)
     // =========================================================================
     async function renderFlightCards() {
-      const orig = document.getElementById('fl-origin').value;
-      const dest = document.getElementById('fl-dest').value;
+      const orig = (document.getElementById('fl-origin').value || '').trim() || 'Bogotá (BOG)';
+      const dest = (document.getElementById('fl-dest').value || '').trim() || 'Cartagena (CTG)';
       const date = document.getElementById('fl-date').value;
       const pax = Number(document.getElementById('fl-pax').value || 3);
       const container = document.getElementById('flights-cards-container');
@@ -3001,12 +3031,12 @@
     }
 
     function askAgentForFlights() {
-      const orig = document.getElementById('fl-origin').value;
-      const dest = document.getElementById('fl-dest').value;
+      const orig = (document.getElementById('fl-origin').value || '').trim() || 'Bogotá';
+      const dest = (document.getElementById('fl-dest').value || '').trim() || 'mi destino seleccionado';
       const date = document.getElementById('fl-date').value;
       const pax = document.getElementById('fl-pax').value;
       switchView('chat', 'Asistente de Viajes');
-      sendPresetPrompt(`Busca vuelos de ${orig} a ${dest} para el ${date} para ${pax} pasajeros y muéstrame horarios y precios en COP.`);
+      sendPresetPrompt(`Busca opciones de vuelos saliendo desde ${orig} hacia ${dest} para el ${date} para ${pax} pasajeros con tarifas en COP.`);
     }
 
     // =========================================================================
@@ -3053,7 +3083,7 @@
     }
 
     async function renderWeatherModule() {
-      const city = document.getElementById('wx-city').value;
+      const city = (document.getElementById('wx-city').value || '').trim() || 'Cartagena de Indias';
       const days = Number(document.getElementById('wx-days').value || 4);
       const heroBox = document.getElementById('weather-hero-container');
       const daysBox = document.getElementById('weather-days-container');
@@ -3123,7 +3153,7 @@
     }
 
     function askAgentForWeather() {
-      const city = document.getElementById('wx-city').value;
+      const city = (document.getElementById('wx-city').value || '').trim() || 'mi destino seleccionado';
       const date = document.getElementById('wx-date').value;
       const days = document.getElementById('wx-days').value;
       switchView('chat', 'Asistente de Viajes');
@@ -3134,8 +3164,10 @@
     // MÓDULO 5: MIS VIAJES E ITINERARIOS
     // =========================================================================
     function toggleNewTripForm(show = true, trip = null) {
+      if (show) switchView('trips', 'Mis Viajes');
       const card = document.getElementById('trip-form-card');
       card.style.display = show ? 'block' : 'none';
+      const btn = document.getElementById('btn-save-trip');
       if (trip) {
         document.getElementById('trip-form-title').textContent = 'Editar Viaje';
         document.getElementById('tf-id').value = trip.tripId;
@@ -3147,6 +3179,7 @@
         document.getElementById('tf-travelers').value = trip.travelers || 2;
         document.getElementById('tf-budget').value = trip.budgetCop || '';
         document.getElementById('tf-status').value = trip.status || 'Planificado';
+        if (btn) btn.textContent = 'Actualizar Viaje en AWS';
       } else {
         document.getElementById('trip-form-title').textContent = 'Registrar Nuevo Viaje Personalizado';
         document.getElementById('tf-id').value = '';
@@ -3160,6 +3193,7 @@
         document.getElementById('tf-travelers').value = 2;
         document.getElementById('tf-budget').value = '';
         document.getElementById('tf-status').value = 'Planificado';
+        if (btn) btn.textContent = 'Guardar Viaje en AWS';
       }
       if (show) card.scrollIntoView({ behavior: 'smooth' });
     }
@@ -3204,6 +3238,8 @@
           showToast(`Viaje '${title}' guardado exitosamente en Amazon DynamoDB.`);
           if (resp && resp.trip && resp.trip.tripId) {
             selectTripForBudgetComparison(resp.trip.tripId);
+            // Generar automáticamente el itinerario inicial de días y actividades en DynamoDB
+            await generateDefaultItineraryForTrip(resp.trip.tripId, dest);
           }
         }
         toggleNewTripForm(false);
@@ -3211,13 +3247,32 @@
       } catch (err) {
         showToast('Error guardando viaje: ' + err.message);
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = 'Guardar Viaje en AWS'; }
+        if (btn) { btn.disabled = false; btn.textContent = id ? 'Actualizar Viaje en AWS' : 'Guardar Viaje en AWS'; }
       }
     }
 
     function editTripById(tripId) {
       const t = state.trips.find(x => x.tripId === tripId);
       if (t) toggleNewTripForm(true, t);
+    }
+
+    async function deleteTrip(tripId) {
+      const trip = state.trips.find(x => x.tripId === tripId);
+      const name = trip ? trip.title : tripId;
+      if (!confirm(`¿Estás seguro de que deseas eliminar permanentemente el viaje "${name}"?\n\nEsta acción eliminará el viaje y en cascada todos sus itinerarios y reservas vinculadas en Amazon DynamoDB.`)) {
+        return;
+      }
+      try {
+        const res = await apiChannel1('/trips/' + tripId, 'DELETE');
+        if (res && res.success !== false) {
+          showToast(`Viaje '${name}' y sus datos asociados eliminados de DynamoDB.`);
+          await refreshAllBusinessData();
+        } else {
+          showToast('Error al eliminar viaje: ' + (res?.error || 'No fue posible'));
+        }
+      } catch (err) {
+        showToast('Error al eliminar viaje: ' + err.message);
+      }
     }
 
     async function generateDefaultItineraryForTrip(tripId, destination) {
@@ -3264,6 +3319,43 @@
       closeActivityModal();
       await refreshAllBusinessData();
       showToast('Actividad agregada al itinerario en DynamoDB.');
+    }
+
+    async function deleteItineraryActivity(tripId, itinId, dayNum, actIdx) {
+      const trip = state.trips.find(t => t.tripId === tripId);
+      if (!trip || !trip.itineraries || !trip.itineraries.length) return;
+      const itin = trip.itineraries.find(i => i.itineraryId === itinId) || trip.itineraries[0];
+      const day = (itin.days || []).find(d => d.dayNumber === dayNum);
+      if (!day || !day.activities || !day.activities[actIdx]) return;
+
+      const act = day.activities[actIdx];
+      if (!confirm(`¿Eliminar la actividad "${act.activity}" (${act.time || '09:00'}) del Día ${dayNum}?`)) {
+        return;
+      }
+
+      day.activities.splice(actIdx, 1);
+      try {
+        await apiChannel1('/itineraries/' + itinId, 'PUT', { itineraryId: itinId, tripId, days: itin.days });
+        await refreshAllBusinessData();
+        showToast(`Actividad "${act.activity}" eliminada del itinerario en DynamoDB.`);
+      } catch (err) {
+        showToast('Error al eliminar actividad: ' + err.message);
+      }
+    }
+
+    async function deleteItinerary(tripId, itinId) {
+      const trip = state.trips.find(t => t.tripId === tripId);
+      const tripName = trip ? trip.title : tripId;
+      if (!confirm(`¿Estás seguro de que deseas eliminar todo el itinerario del viaje "${tripName}" en Amazon DynamoDB?`)) {
+        return;
+      }
+      try {
+        await apiChannel1('/itineraries/' + itinId, 'PUT', { itineraryId: itinId, tripId, days: [] });
+        await refreshAllBusinessData();
+        showToast('Itinerario eliminado exitosamente de DynamoDB.');
+      } catch (err) {
+        showToast('Error al eliminar itinerario: ' + err.message);
+      }
     }
 
     function toggleBudgetComparatorPanel() {
@@ -3404,7 +3496,13 @@
                     <div style="display:flex; align-items:center; gap:12px;">
                       <span class="num" style="font-weight:700; font-size:0.95rem; color:var(--ink-900);">${formatCop(r.priceCop)}</span>
                       <span class="pill pill-${r.status}">${r.status}</span>
-                      <div style="display:inline-flex; gap:4px;">
+                      <div style="display:inline-flex; gap:4px; align-items:center;">
+                        <button class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="openEditReservation('${r.reservationId}')" title="Editar Reserva">
+                          <i data-lucide="edit-2"></i>
+                        </button>
+                        <button class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; color:#b91c1c; border-color:#fecaca;" onclick="deleteReservation('${r.reservationId}')" title="Eliminar Reserva">
+                          <i data-lucide="trash-2"></i>
+                        </button>
                         ${r.status !== 'Confirmada' ? `<button class="btn btn-primary btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="updateReservationStatus('${r.reservationId}', 'Confirmada')">Confirmar</button>` : ''}
                         ${r.status !== 'Simulada' ? `<button class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="updateReservationStatus('${r.reservationId}', 'Simulada')">Simulada</button>` : ''}
                       </div>
@@ -3436,11 +3534,16 @@
                     <span class="num" style="font-size:0.72rem; color:var(--ink-500);">${d.date || ''}</span>
                   </div>
                   <div style="font-weight:700; font-size:0.88rem; margin-bottom:10px; color:var(--ink-900);">${d.title || ''}</div>
-                  ${(d.activities || []).map(a => `
+                  ${(d.activities || []).map((a, actIdx) => `
                     <div class="timeline-entry">
-                      <div style="display:flex; justify-content:space-between; font-size:0.76rem; font-weight:600; color:var(--ink-900);">
+                      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.76rem; font-weight:600; color:var(--ink-900);">
                         <span class="num">${a.time || '09:00'}</span>
-                        <span class="num" style="color:var(--ink-700);">${formatCop(a.costCop || 0)}</span>
+                        <div style="display:inline-flex; align-items:center; gap:6px;">
+                          <span class="num" style="color:var(--ink-700);">${formatCop(a.costCop || 0)}</span>
+                          <button class="btn btn-outline btn-sm" style="padding:1px 5px; font-size:0.65rem; color:#b91c1c; border-color:#fecaca; line-height:1;" onclick="deleteItineraryActivity('${t.tripId}', '${itin.itineraryId}', ${d.dayNumber}, ${actIdx})" title="Eliminar actividad del itinerario">
+                            <i data-lucide="trash-2" style="width:11px; height:11px;"></i>
+                          </button>
+                        </div>
                       </div>
                       <div style="font-size:0.8rem; color:var(--ink-700); margin-top:2px;">${a.activity}</div>
                     </div>
@@ -3478,9 +3581,19 @@
                   <button class="btn btn-primary btn-sm" onclick="selectTripForBudgetComparison('${t.tripId}')">
                     <i data-lucide="pie-chart"></i> Comparar Presupuesto
                   </button>
-                  <button class="btn btn-outline btn-sm" onclick="editTripById('${t.tripId}')">Editar</button>
+                  <button class="btn btn-outline btn-sm" onclick="editTripById('${t.tripId}')">
+                    <i data-lucide="edit-3"></i> Editar
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="color:#b91c1c; border-color:#fecaca;" onclick="deleteTrip('${t.tripId}')">
+                    <i data-lucide="trash-2"></i> Eliminar
+                  </button>
                   ${itin
-                    ? `<button class="btn btn-outline btn-sm" onclick="openActivityModal('${t.tripId}', '${itin.itineraryId}')">+ Agregar Actividad</button>`
+                    ? `
+                      <button class="btn btn-outline btn-sm" onclick="openActivityModal('${t.tripId}', '${itin.itineraryId}')">+ Agregar Actividad</button>
+                      <button class="btn btn-outline btn-sm" style="color:#b91c1c; border-color:#fecaca;" onclick="deleteItinerary('${t.tripId}', '${itin.itineraryId}')" title="Borrar todo el itinerario">
+                        <i data-lucide="calendar-x"></i> Borrar Itinerario
+                      </button>
+                    `
                     : `<button class="btn btn-outline btn-sm" onclick="generateDefaultItineraryForTrip('${t.tripId}', '${t.destination}')">Generar Itinerario</button>`
                   }
                 </div>
@@ -3501,7 +3614,8 @@
     // =========================================================================
     // MÓDULO 6: RESERVAS (DATA TABLE)
     // =========================================================================
-    function toggleReservationForm(show = true) {
+    function toggleReservationForm(show = true, reservation = null) {
+      if (show) switchView('reservations', 'Gestión de Reservas');
       const card = document.getElementById('res-form-card');
       card.style.display = show ? 'block' : 'none';
       if (show) {
@@ -3509,17 +3623,66 @@
         sel.innerHTML = state.trips.length
           ? state.trips.map(t => `<option value="${t.tripId}">${t.title} (${t.origin} → ${t.destination}) [${t.tripId}]</option>`).join('')
           : `<option value="">Sin viajes registrados (crea uno primero)</option>`;
-        document.getElementById('rf-provider').value = '';
-        document.getElementById('rf-title').value = '';
-        document.getElementById('rf-date').value = new Date().toISOString().split('T')[0];
-        document.getElementById('rf-price').value = '';
-        document.getElementById('rf-pax').value = 2;
-        document.getElementById('rf-status').value = 'Simulada';
+
+        const titleEl = document.getElementById('res-form-title');
+        const btnSave = document.getElementById('btn-save-res');
+
+        if (reservation) {
+          if (titleEl) titleEl.textContent = 'Editar Reserva';
+          document.getElementById('rf-id').value = reservation.reservationId;
+          document.getElementById('rf-trip').value = reservation.tripId || (state.trips[0] ? state.trips[0].tripId : '');
+          document.getElementById('rf-type').value = reservation.type || 'Vuelo';
+          document.getElementById('rf-provider').value = reservation.provider || '';
+          document.getElementById('rf-title').value = reservation.title || '';
+          document.getElementById('rf-date').value = reservation.date || new Date().toISOString().split('T')[0];
+          document.getElementById('rf-price').value = reservation.priceCop || '';
+          document.getElementById('rf-pax').value = reservation.passengers || 1;
+          const assigned = Array.isArray(reservation.assignedTravelers) ? reservation.assignedTravelers.join(', ') : (reservation.travelerName || '');
+          document.getElementById('rf-travelers').value = assigned;
+          document.getElementById('rf-status').value = reservation.status || 'Simulada';
+          if (btnSave) btnSave.textContent = 'Actualizar Reserva';
+        } else {
+          if (titleEl) titleEl.textContent = 'Registrar Reserva';
+          document.getElementById('rf-id').value = '';
+          document.getElementById('rf-provider').value = '';
+          document.getElementById('rf-title').value = '';
+          document.getElementById('rf-date').value = new Date().toISOString().split('T')[0];
+          document.getElementById('rf-price').value = '';
+          document.getElementById('rf-pax').value = 2;
+          document.getElementById('rf-travelers').value = '';
+          document.getElementById('rf-status').value = 'Simulada';
+          if (btnSave) btnSave.textContent = 'Guardar Reserva';
+        }
         card.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
+    function openEditReservation(reservationId) {
+      const r = state.reservations.find(x => x.reservationId === reservationId);
+      if (r) toggleReservationForm(true, r);
+    }
+
+    async function deleteReservation(reservationId) {
+      const r = state.reservations.find(x => x.reservationId === reservationId);
+      const title = r ? r.title : reservationId;
+      if (!confirm(`¿Estás seguro de que deseas eliminar la reserva "${title}" (${reservationId}) de Amazon DynamoDB?`)) {
+        return;
+      }
+      try {
+        const res = await apiChannel1('/reservations/' + reservationId, 'DELETE');
+        if (res && res.success !== false) {
+          showToast(`Reserva '${title}' eliminada exitosamente de DynamoDB.`);
+          await refreshAllBusinessData();
+        } else {
+          showToast('Error al eliminar reserva: ' + (res?.error || 'No fue posible'));
+        }
+      } catch (err) {
+        showToast('Error al eliminar reserva: ' + err.message);
+      }
+    }
+
     async function submitReservationForm() {
+      const id = document.getElementById('rf-id')?.value;
       const tripId = document.getElementById('rf-trip').value;
       if (!tripId) {
         showToast('Debes seleccionar un viaje al que asociar la reserva.');
@@ -3544,10 +3707,25 @@
         payload.passengers = assignedTravelers.length;
       }
 
-      await apiChannel1('/reservations', 'POST', payload);
-      toggleReservationForm(false);
-      await refreshAllBusinessData();
-      showToast('Reserva registrada exitosamente en AWS DynamoDB con viajeros asignados.');
+      const btn = document.getElementById('btn-save-res');
+      if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+      try {
+        if (id) {
+          payload.reservationId = id;
+          await apiChannel1('/reservations/' + id, 'PUT', payload);
+          showToast('Reserva actualizada exitosamente en Amazon DynamoDB.');
+        } else {
+          await apiChannel1('/reservations', 'POST', payload);
+          showToast('Reserva registrada exitosamente en AWS DynamoDB con viajeros asignados.');
+        }
+        toggleReservationForm(false);
+        await refreshAllBusinessData();
+      } catch (err) {
+        showToast('Error al guardar reserva: ' + err.message);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = id ? 'Actualizar Reserva' : 'Guardar Reserva'; }
+      }
     }
 
     async function updateReservationStatus(reservationId, newStatus) {
@@ -3583,14 +3761,22 @@
           <td class="num" style="font-weight:600; color:var(--ink-900);">${formatCop(r.priceCop)}</td>
           <td><span class="pill pill-${r.status}">${r.status}</span></td>
           <td style="text-align:right;">
-            <div style="display:inline-flex; gap:4px;">
-              <button class="btn btn-outline btn-sm" onclick="updateReservationStatus('${r.reservationId}', 'Simulada')">Simulada</button>
-              <button class="btn btn-outline btn-sm" onclick="updateReservationStatus('${r.reservationId}', 'Pendiente')">Pendiente</button>
-              <button class="btn btn-primary btn-sm" onclick="updateReservationStatus('${r.reservationId}', 'Confirmada')">Confirmar</button>
+            <div style="display:inline-flex; gap:6px; align-items:center;">
+              <button class="btn btn-outline btn-sm" onclick="openEditReservation('${r.reservationId}')" title="Editar Reserva">
+                <i data-lucide="edit-2"></i> Editar
+              </button>
+              <button class="btn btn-outline btn-sm" style="color:#b91c1c; border-color:#fecaca;" onclick="deleteReservation('${r.reservationId}')" title="Eliminar Reserva">
+                <i data-lucide="trash-2"></i>
+              </button>
+              <div style="border-left:1px solid var(--border); height:16px; margin:0 2px;"></div>
+              ${r.status !== 'Simulada' ? `<button class="btn btn-outline btn-sm" onclick="updateReservationStatus('${r.reservationId}', 'Simulada')">Simulada</button>` : ''}
+              ${r.status !== 'Pendiente' ? `<button class="btn btn-outline btn-sm" onclick="updateReservationStatus('${r.reservationId}', 'Pendiente')">Pendiente</button>` : ''}
+              ${r.status !== 'Confirmada' ? `<button class="btn btn-primary btn-sm" onclick="updateReservationStatus('${r.reservationId}', 'Confirmada')">Confirmar</button>` : ''}
             </div>
           </td>
         </tr>
       `).join('');
+      refreshIcons();
     }
 
     // =========================================================================
@@ -3607,7 +3793,7 @@
     }
     function saveConfigModal() {
       apiGatewayUrl = document.getElementById('cfg-api-url').value.trim() || 'https://5b6j1ip133.execute-api.us-east-1.amazonaws.com/prod';
-      agentStreamUrl = document.getElementById('cfg-agent-url').value.trim() || 'https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A744617282997%3Aruntime%2Fworkshop2_OrchestratorAgent-tPLDXq487r/invocations';
+      agentStreamUrl = document.getElementById('cfg-agent-url').value.trim() || 'https://jbrbzha6fvqvf4ncttcoundpsa0thygh.lambda-url.us-east-1.on.aws/';
       actorId = document.getElementById('cfg-actor-id').value.trim() || 'viajero_colombia_01';
       localStorage.setItem('trip_planner_api_url', apiGatewayUrl);
       localStorage.setItem('trip_planner_agent_url', agentStreamUrl);
